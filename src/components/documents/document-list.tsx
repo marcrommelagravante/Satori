@@ -201,30 +201,34 @@ export function DocumentList({ documents, workspaceId }: DocumentListProps) {
 
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          {/* Step 2 Process Button */}
-                          {(doc.status === "pending" || doc.status === "failed") && (
-                            <Button
-                              size="sm"
-                              variant={doc.status === "failed" ? "outline" : "default"}
-                              className="h-7 px-2.5 text-xs gap-1"
-                              onClick={() => handleProcess(doc.id)}
-                              disabled={isProcessing}
-                            >
-                              {isProcessing ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : doc.status === "failed" ? (
-                                <>
-                                  <RotateCcw className="h-3 w-3" />
-                                  Retry
-                                </>
-                              ) : (
-                                <>
-                                  <Play className="h-3 w-3" />
-                                  Process
-                                </>
-                              )}
-                            </Button>
-                          )}
+                          {/* Process / Re-index Button */}
+                          <Button
+                            size="sm"
+                            variant={doc.status === "ready" ? "outline" : doc.status === "failed" ? "outline" : "default"}
+                            className="h-7 px-2.5 text-xs gap-1"
+                            onClick={() => handleProcess(doc.id)}
+                            disabled={isProcessing}
+                            title={doc.status === "ready" ? "Re-index Embeddings" : "Process"}
+                          >
+                            {isProcessing ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : doc.status === "ready" ? (
+                              <>
+                                <RotateCcw className="h-3 w-3" />
+                                Re-index
+                              </>
+                            ) : doc.status === "failed" ? (
+                              <>
+                                <RotateCcw className="h-3 w-3" />
+                                Retry
+                              </>
+                            ) : (
+                              <>
+                                <Play className="h-3 w-3" />
+                                Process
+                              </>
+                            )}
+                          </Button>
 
                           <Button
                             asChild

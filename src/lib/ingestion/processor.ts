@@ -9,7 +9,8 @@ import { getStorage } from "@/lib/storage";
 import { extractDocumentText } from "./extractors";
 import { cleanText } from "./cleaner";
 import { chunkDocument } from "./chunker";
-import { eq } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
+import { generateBatchEmbeddings } from "@/lib/ai/gemini";
 
 export const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15 MB
 
@@ -136,24 +137,29 @@ export async function processDocument(documentId: string): Promise<void> {
       throw new Error("Document produced zero chunk segments.");
     }
 
-    // 6. Delete any existing chunks for idempotency / retries
+    // 6. Generate 768-dimensional embeddings for all chunks
+    const chunkTexts = chunks.map((c) => c.content);
+    const embeddings = await generateBatchEmbeddings(chunkTexts);
+
+    // 7. Delete any existing chunks for idempotency / retries
     await db
       .delete(documentChunks)
       .where(eq(documentChunks.documentVersionId, version.id));
 
-    // 7. Persist chunks in database
+    // 8. Persist chunks with embeddings in database
     await db.insert(documentChunks).values(
-      chunks.map((c) => ({
+      chunks.map((c, idx) => ({
         documentVersionId: version.id,
         chunkIndex: c.chunkIndex,
         content: c.content,
         pageNumber: c.pageNumber,
         section: c.section,
         tokenEstimate: c.tokenEstimate,
+        embedding: embeddings[idx],
       }))
     );
 
-    // 8. Mark document 'ready'
+    // 9. Mark document 'ready'
     await db
       .update(documents)
       .set({ status: "ready", errorMessage: null, updatedAt: new Date() })
@@ -195,3 +201,43 @@ export async function deleteDocumentAndStorage(documentId: string): Promise<void
   // Deleting document cascades to document_versions and document_chunks
   await db.delete(documents).where(eq(documents.id, documentId));
 }
+
+export async function backfillWorkspaceEmbeddings(
+  workspaceId: string
+): Promise<{ backfilledCount: number }> {
+  const unindexedChunks = await db
+    .select({
+      chunkId: documentChunks.id,
+      content: documentChunks.content,
+    })
+    .from(documentChunks)
+    .innerJoin(
+      documentVersions,
+      eq(documentChunks.documentVersionId, documentVersions.id)
+    )
+    .innerJoin(documents, eq(documentVersions.documentId, documents.id))
+    .where(
+      and(
+        eq(documents.workspaceId, workspaceId),
+        isNull(documentChunks.embedding)
+      )
+    );
+
+  if (unindexedChunks.length === 0) {
+    return { backfilledCount: 0 };
+  }
+
+  const embeddings = await generateBatchEmbeddings(
+    unindexedChunks.map((c) => c.content)
+  );
+
+  for (let i = 0; i < unindexedChunks.length; i++) {
+    await db
+      .update(documentChunks)
+      .set({ embedding: embeddings[i] })
+      .where(eq(documentChunks.id, unindexedChunks[i].chunkId));
+  }
+
+  return { backfilledCount: unindexedChunks.length };
+}
+

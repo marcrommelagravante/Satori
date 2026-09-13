@@ -1,7 +1,14 @@
 import { requireAuth } from "@/lib/auth/session";
 import { getUserWorkspaces } from "@/lib/workspaces/service";
-import { Network, Database } from "lucide-react";
+import { db } from "@/lib/db";
+import { documents, documentVersions, documentChunks } from "@/lib/db/schema";
+import { eq, count, sql, desc } from "drizzle-orm";
+import { Network, Database, Cpu, HardDrive, CheckCircle2, AlertTriangle, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { SemanticSearchPlayground } from "./semantic-search-playground";
+import { ChunkInspector, type InspectChunk } from "./chunk-inspector";
+import { BackfillButton } from "./backfill-button";
 
 export default async function KnowledgePage({
   searchParams,
@@ -14,33 +21,183 @@ export default async function KnowledgePage({
   const activeWorkspace =
     (params.ws && workspaces.find((w) => w.id === params.ws)) || workspaces[0];
 
+  if (!activeWorkspace) {
+    return (
+      <div className="p-8 text-center text-muted-foreground text-sm">
+        No active workspace found. Please select or create a workspace.
+      </div>
+    );
+  }
+
+  // 1. Fetch vector statistics for the current workspace
+  const [chunkStats] = await db
+    .select({
+      totalChunks: count(documentChunks.id),
+      embeddedChunks: count(documentChunks.embedding),
+    })
+    .from(documentChunks)
+    .innerJoin(
+      documentVersions,
+      eq(documentChunks.documentVersionId, documentVersions.id)
+    )
+    .innerJoin(documents, eq(documentVersions.documentId, documents.id))
+    .where(eq(documents.workspaceId, activeWorkspace.id));
+
+  const totalChunks = Number(chunkStats?.totalChunks || 0);
+  const embeddedChunks = Number(chunkStats?.embeddedChunks || 0);
+  const unindexedCount = totalChunks - embeddedChunks;
+
+  // 2. Count ready documents
+  const [docStats] = await db
+    .select({
+      totalDocs: count(documents.id),
+    })
+    .from(documents)
+    .where(
+      sql`${documents.workspaceId} = ${activeWorkspace.id} AND ${documents.status} = 'ready'`
+    );
+  const readyDocs = Number(docStats?.totalDocs || 0);
+
+  // 3. Fetch recent chunks for the inspector
+  const recentChunksRaw = await db
+    .select({
+      id: documentChunks.id,
+      documentName: documents.name,
+      chunkIndex: documentChunks.chunkIndex,
+      content: documentChunks.content,
+      pageNumber: documentChunks.pageNumber,
+      section: documentChunks.section,
+      tokenEstimate: documentChunks.tokenEstimate,
+      hasEmbedding: sql<boolean>`${documentChunks.embedding} IS NOT NULL`,
+    })
+    .from(documentChunks)
+    .innerJoin(
+      documentVersions,
+      eq(documentChunks.documentVersionId, documentVersions.id)
+    )
+    .innerJoin(documents, eq(documentVersions.documentId, documents.id))
+    .where(eq(documents.workspaceId, activeWorkspace.id))
+    .orderBy(desc(documentChunks.createdAt))
+    .limit(50);
+
+  const inspectChunks: InspectChunk[] = recentChunksRaw.map((c) => ({
+    ...c,
+    hasEmbedding: Boolean(c.hasEmbedding),
+  }));
+
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="border-b border-border pb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <h1 className="text-2xl font-bold tracking-tight">Knowledge Index</h1>
-          <Badge variant="outline">Phase 3</Badge>
+    <div className="space-y-6 max-w-5xl mx-auto pb-12">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-bold tracking-tight">Knowledge Hub</h1>
+            <Badge variant="ai">Phase 3: Custom RAG</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            pgvector semantic search, chunk embeddings, and context construction for{" "}
+            <strong>{activeWorkspace.name}</strong>.
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Inspect chunks, pgvector embeddings, and similarity metrics inside PostgreSQL.
-        </p>
+
+        <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 px-3 py-1.5 rounded-lg border border-border">
+          <Database className="h-3.5 w-3.5 text-primary" />
+          Workspace: <strong className="text-foreground">{activeWorkspace.name}</strong>
+        </div>
       </div>
 
-      <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4">
-          <Network className="h-6 w-6" />
-        </div>
-        <h2 className="text-base font-semibold text-foreground mb-1">
-          Custom RAG Vector Storage & Retrieval
-        </h2>
-        <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-          pgvector is active on Neon PostgreSQL with 768-dimension embeddings for Gemini text-embedding-004. Semantic search queries will be enabled in Phase 3.
-        </p>
-        <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-lg">
-          <Database className="h-3.5 w-3.5 text-primary" />
-          Workspace: <strong>{activeWorkspace?.name}</strong>
-        </div>
+      {/* Vector Stats Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Card className="border-border p-4 shadow-2xs">
+          <CardContent className="p-0 space-y-1">
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span className="text-xs font-medium">Total Chunks</span>
+              <Layers className="h-4 w-4 text-primary" />
+            </div>
+            <div className="text-2xl font-bold font-mono text-foreground">
+              {totalChunks}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Across {readyDocs} ready documents
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border p-4 shadow-2xs">
+          <CardContent className="p-0 space-y-1">
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span className="text-xs font-medium">Embedded Chunks</span>
+              <CheckCircle2 className="h-4 w-4 text-success" />
+            </div>
+            <div className="text-2xl font-bold font-mono text-foreground">
+              {embeddedChunks}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              {totalChunks > 0
+                ? `${Math.round((embeddedChunks / totalChunks) * 100)}% indexed`
+                : "No chunks yet"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border p-4 shadow-2xs">
+          <CardContent className="p-0 space-y-1">
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span className="text-xs font-medium">Vector Dimensions</span>
+              <Cpu className="h-4 w-4 text-primary" />
+            </div>
+            <div className="text-2xl font-bold font-mono text-foreground">
+              768
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              text-embedding-004
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border p-4 shadow-2xs">
+          <CardContent className="p-0 space-y-1">
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span className="text-xs font-medium">Vector Index</span>
+              <HardDrive className="h-4 w-4 text-primary" />
+            </div>
+            <div className="text-2xl font-bold font-mono text-foreground">
+              HNSW
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              vector_cosine_ops
+            </p>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Backfill Alert if legacy chunks lack embeddings */}
+      {unindexedCount > 0 && (
+        <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-warning-foreground">
+                {unindexedCount} chunks in this workspace are missing vector embeddings.
+              </p>
+              <p className="text-muted-foreground mt-0.5">
+                Legacy chunks generated prior to Phase 3 need embeddings to appear in semantic search.
+              </p>
+            </div>
+          </div>
+          <BackfillButton workspaceId={activeWorkspace.id} unindexedCount={unindexedCount} />
+        </div>
+      )}
+
+      {/* Interactive Semantic Search Playground */}
+      <SemanticSearchPlayground
+        workspaceId={activeWorkspace.id}
+        workspaceName={activeWorkspace.name}
+        hasIndexedChunks={embeddedChunks > 0}
+      />
+
+      {/* Chunk Catalog / Inspector */}
+      <ChunkInspector chunks={inspectChunks} />
     </div>
   );
 }

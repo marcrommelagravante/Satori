@@ -5,6 +5,7 @@ import {
   integer,
   pgEnum,
   uniqueIndex,
+  index,
   vector,
   jsonb,
 } from "drizzle-orm/pg-core";
@@ -79,6 +80,10 @@ export const documentChunks = pgTable(
     uniqueIndex("document_chunks_version_chunk_idx").on(
       table.documentVersionId,
       table.chunkIndex
+    ),
+    index("document_chunks_embedding_hnsw_idx").using(
+      "hnsw",
+      table.embedding.op("vector_cosine_ops")
     ),
   ]
 );
