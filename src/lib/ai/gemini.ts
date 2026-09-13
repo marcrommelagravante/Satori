@@ -162,3 +162,147 @@ export async function generateBatchEmbeddings(
 
   return results;
 }
+
+export const GENERATION_MODEL =
+  process.env.GEMINI_GENERATION_MODEL || "gemini-3.6-flash";
+
+export interface ChatHistoryMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface GenerateGroundedResponseOptions {
+  systemPrompt?: string;
+  userQuestion: string;
+  context: string;
+  conversationHistory?: ChatHistoryMessage[];
+}
+
+export interface GenerateGroundedResponseResult {
+  text: string;
+  model: string;
+  promptTokens: number;
+  outputTokens: number;
+}
+
+const DEFAULT_SYSTEM_INSTRUCTION = `You are Satori, an intelligent workspace knowledge assistant.
+Your task is to answer the user's question accurately, concisely, and objectively based ONLY on the provided workspace context enclosed in <context> tags.
+
+CITATION RULES:
+1. Every factual statement, policy, metric, or requirement derived from the context MUST include an inline citation formatted exactly as [source-N] corresponding to the <source id="..."> attribute (e.g., [source-1], [source-2]).
+2. Cite sources immediately following the specific statement they support (e.g., "The equipment reimbursement is $500 per calendar year [source-1].").
+3. NEVER invent source numbers. Only cite sources that are explicitly provided in the <context> block.
+4. If the context does not contain enough information to answer the question, state: "I could not find enough information in this workspace to answer this question." Do not make up unsupported facts.
+5. Maintain a professional, clear, and direct tone.`;
+
+/**
+ * Deterministic fallback generator for offline tests or when API key is missing/quota-limited.
+ */
+function generateFallbackGroundedResponse(
+  options: GenerateGroundedResponseOptions
+): GenerateGroundedResponseResult {
+  const { userQuestion, context } = options;
+
+  // Extract source tags if present
+  const sourceMatches = [...context.matchAll(/<source\s+id="([^"]+)"[^>]*>([\s\S]*?)<\/source>/gi)];
+
+  if (sourceMatches.length === 0) {
+    return {
+      text: "I could not find enough information in this workspace to answer this question.",
+      model: "satori-fallback-local",
+      promptTokens: Math.ceil((context.length + userQuestion.length) / 4),
+      outputTokens: 18,
+    };
+  }
+
+  // Pick the top source
+  const firstSourceId = sourceMatches[0][1];
+  const firstSourceContent = sourceMatches[0][2].trim();
+
+  // Find a relevant line or take the first 1-2 sentences
+  const lines = firstSourceContent
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^#+\s*/, "").trim())
+    .filter((l) => l.length > 20);
+
+  const bestSnippet = lines[0] || firstSourceContent.slice(0, 160);
+
+  const text = `Based on the workspace documents, ${bestSnippet} [${firstSourceId}].`;
+
+  return {
+    text,
+    model: "satori-fallback-local",
+    promptTokens: Math.ceil((context.length + userQuestion.length) / 4),
+    outputTokens: Math.ceil(text.length / 4),
+  };
+}
+
+/**
+ * Generates a grounded response using Gemini models with prompt context and citation guidelines.
+ */
+export async function generateGroundedResponse(
+  options: GenerateGroundedResponseOptions
+): Promise<GenerateGroundedResponseResult> {
+  const client = getGenAIClient();
+  if (!client) {
+    return generateFallbackGroundedResponse(options);
+  }
+
+  const {
+    systemPrompt = DEFAULT_SYSTEM_INSTRUCTION,
+    userQuestion,
+    context,
+    conversationHistory = [],
+  } = options;
+
+  // Build the message contents array for Gemini
+  // We format recent conversation history turns (if any) followed by the current question + context
+  const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
+
+  for (const turn of conversationHistory.slice(-6)) {
+    contents.push({
+      role: turn.role === "assistant" ? "model" : "user",
+      parts: [{ text: turn.content }],
+    });
+  }
+
+  // Current turn with context block
+  const userContent = `Here is the relevant workspace documentation context:
+
+${context}
+
+User Question: ${userQuestion}`;
+
+  contents.push({
+    role: "user",
+    parts: [{ text: userContent }],
+  });
+
+  try {
+    const response = await client.models.generateContent({
+      model: GENERATION_MODEL,
+      contents: contents,
+      config: {
+        systemInstruction: systemPrompt,
+        temperature: 0.2,
+      },
+    });
+
+    const responseText = response.text || "";
+    const promptTokens = response.usageMetadata?.promptTokenCount ?? Math.ceil(userContent.length / 4);
+    const outputTokens = response.usageMetadata?.candidatesTokenCount ?? Math.ceil(responseText.length / 4);
+
+    return {
+      text: responseText.trim(),
+      model: GENERATION_MODEL,
+      promptTokens,
+      outputTokens,
+    };
+  } catch (error) {
+    console.warn(
+      "Gemini generation error, using deterministic fallback response:",
+      error instanceof Error ? error.message : error
+    );
+    return generateFallbackGroundedResponse(options);
+  }
+}

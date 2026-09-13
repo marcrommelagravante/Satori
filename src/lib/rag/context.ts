@@ -13,6 +13,7 @@ export interface ContextChunk {
 
 export interface SourceAttribution {
   sourceId: string;
+  chunkId: string;
   documentId: string;
   documentName: string;
   versionNumber: number;
@@ -75,6 +76,7 @@ export function buildRagContext(
     const sourceId = `source-${i + 1}`;
     citationMap[sourceId] = {
       sourceId,
+      chunkId: chunk.chunkId,
       documentId: chunk.documentId,
       documentName: chunk.documentName,
       versionNumber: chunk.versionNumber,

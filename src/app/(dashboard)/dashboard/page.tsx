@@ -5,7 +5,7 @@ import {
 } from "@/lib/workspaces/service";
 import { db } from "@/lib/db";
 import { documents, conversations, documentChunks } from "@/lib/db/schema";
-import { eq, count } from "drizzle-orm";
+import { eq, count, desc } from "drizzle-orm";
 import Link from "next/link";
 import {
   FileText,
@@ -16,6 +16,8 @@ import {
   ArrowUpRight,
   ShieldCheck,
   CheckCircle2,
+  MessageSquare,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -48,6 +50,13 @@ export default async function DashboardPage({
     .select({ value: count() })
     .from(conversations)
     .where(eq(conversations.workspaceId, activeWorkspace.id));
+
+  const recentConversations = await db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.workspaceId, activeWorkspace.id))
+    .orderBy(desc(conversations.updatedAt))
+    .limit(3);
 
   const docCount = docCountRes?.value ?? 0;
   const chatCount = chatCountRes?.value ?? 0;
@@ -223,6 +232,62 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Recent Grounded Conversations */}
+      {recentConversations.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-primary" />
+                Recent Conversations
+              </CardTitle>
+              <CardDescription>
+                Continue previous grounded question-and-answer threads in this workspace.
+              </CardDescription>
+            </div>
+            <Button asChild variant="ghost" size="sm" className="text-xs">
+              <Link href={`/chat?ws=${activeWorkspace.id}`}>
+                View All
+                <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y divide-border">
+              {recentConversations.map((conv) => (
+                <div
+                  key={conv.id}
+                  className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-4"
+                >
+                  <div className="min-w-0 flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center shrink-0">
+                      <Sparkles className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <Link
+                        href={`/chat?ws=${activeWorkspace.id}&conv=${conv.id}`}
+                        className="text-xs font-semibold text-foreground hover:text-primary transition-colors truncate block"
+                      >
+                        {conv.title}
+                      </Link>
+                      <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <Clock className="h-3 w-3" />
+                        Updated {new Date(conv.updatedAt).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
+                  </div>
+                  <Button asChild variant="outline" size="sm" className="h-7 text-xs shrink-0">
+                    <Link href={`/chat?ws=${activeWorkspace.id}&conv=${conv.id}`}>
+                      Open Chat
+                    </Link>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Empty State / Guided Next Steps */}
       {docCount === 0 && (
