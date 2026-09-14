@@ -2,7 +2,7 @@
 
 import { requireAuth } from "@/lib/auth/session";
 import { requireWorkspaceMember } from "@/lib/workspaces/guard";
-import { searchSimilarChunks, buildRagContext } from "@/lib/rag";
+import { searchChunks, buildRagContext, type RetrievalMode } from "@/lib/rag";
 import { backfillWorkspaceEmbeddings } from "@/lib/ingestion/processor";
 import { revalidatePath } from "next/cache";
 
@@ -11,12 +11,13 @@ export interface SearchKnowledgeInput {
   query: string;
   topK?: number;
   similarityThreshold?: number;
+  mode?: RetrievalMode;
 }
 
 export async function searchKnowledgeAction(input: SearchKnowledgeInput) {
   await requireAuth();
 
-  const { workspaceId, query, topK, similarityThreshold } = input;
+  const { workspaceId, query, topK, similarityThreshold, mode } = input;
   if (!workspaceId || !query || query.trim().length === 0) {
     return { error: "Workspace ID and query are required." };
   }
@@ -26,11 +27,12 @@ export async function searchKnowledgeAction(input: SearchKnowledgeInput) {
 
   try {
     const startTime = Date.now();
-    const chunks = await searchSimilarChunks({
+    const chunks = await searchChunks({
+      mode: mode ?? "hybrid",
       workspaceId,
       query: query.trim(),
       topK: topK ?? 5,
-      similarityThreshold: similarityThreshold ?? 0.5,
+      similarityThreshold: similarityThreshold ?? 0.45,
     });
     const latencyMs = Date.now() - startTime;
 

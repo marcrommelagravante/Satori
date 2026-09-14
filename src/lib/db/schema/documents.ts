@@ -8,8 +8,15 @@ import {
   index,
   vector,
   jsonb,
+  customType,
 } from "drizzle-orm/pg-core";
 import { workspaces } from "./workspaces";
+
+export const tsvector = customType<{ data: string }>({
+  dataType() {
+    return "tsvector";
+  },
+});
 
 export const documentStatusEnum = pgEnum("document_status", [
   "pending",
@@ -73,6 +80,7 @@ export const documentChunks = pgTable(
     section: text("section"),
     tokenEstimate: integer("token_estimate"),
     embedding: vector("embedding", { dimensions: 768 }),
+    searchVector: tsvector("search_vector"),
     metadata: jsonb("metadata"),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   },
@@ -84,6 +92,10 @@ export const documentChunks = pgTable(
     index("document_chunks_embedding_hnsw_idx").using(
       "hnsw",
       table.embedding.op("vector_cosine_ops")
+    ),
+    index("document_chunks_search_vector_gin_idx").using(
+      "gin",
+      table.searchVector
     ),
   ]
 );

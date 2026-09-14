@@ -29,11 +29,12 @@ export default async function KnowledgePage({
     );
   }
 
-  // 1. Fetch vector statistics for the current workspace
+  // 1. Fetch vector and FTS statistics for the current workspace
   const [chunkStats] = await db
     .select({
       totalChunks: count(documentChunks.id),
       embeddedChunks: count(documentChunks.embedding),
+      ftsChunks: count(documentChunks.searchVector),
     })
     .from(documentChunks)
     .innerJoin(
@@ -45,6 +46,7 @@ export default async function KnowledgePage({
 
   const totalChunks = Number(chunkStats?.totalChunks || 0);
   const embeddedChunks = Number(chunkStats?.embeddedChunks || 0);
+  const ftsChunks = Number(chunkStats?.ftsChunks || 0);
   const unindexedCount = totalChunks - embeddedChunks;
 
   // 2. Count ready documents
@@ -92,10 +94,10 @@ export default async function KnowledgePage({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-2xl font-bold tracking-tight">Knowledge Hub</h1>
-            <Badge variant="ai">Phase 3: Custom RAG</Badge>
+            <Badge variant="ai">Phase 5: Hybrid Search</Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            pgvector semantic search, chunk embeddings, and context construction for{" "}
+            pgvector semantic search, PostgreSQL full-text search, and Reciprocal Rank Fusion (RRF) for{" "}
             <strong>{activeWorkspace.name}</strong>.
           </p>
         </div>
@@ -106,7 +108,7 @@ export default async function KnowledgePage({
         </div>
       </div>
 
-      {/* Vector Stats Grid */}
+      {/* Vector & FTS Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="border-border p-4 shadow-2xs">
           <CardContent className="p-0 space-y-1">
@@ -126,7 +128,7 @@ export default async function KnowledgePage({
         <Card className="border-border p-4 shadow-2xs">
           <CardContent className="p-0 space-y-1">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-medium">Embedded Chunks</span>
+              <span className="text-xs font-medium">Vector Embedded</span>
               <CheckCircle2 className="h-4 w-4 text-success" />
             </div>
             <div className="text-2xl font-bold font-mono text-foreground">
@@ -143,14 +145,14 @@ export default async function KnowledgePage({
         <Card className="border-border p-4 shadow-2xs">
           <CardContent className="p-0 space-y-1">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-medium">Vector Dimensions</span>
+              <span className="text-xs font-medium">FTS Indexed</span>
               <Cpu className="h-4 w-4 text-primary" />
             </div>
             <div className="text-2xl font-bold font-mono text-foreground">
-              768
+              {ftsChunks}
             </div>
             <p className="text-[11px] text-muted-foreground">
-              text-embedding-004
+              GIN tsvector indexed
             </p>
           </CardContent>
         </Card>
@@ -158,14 +160,14 @@ export default async function KnowledgePage({
         <Card className="border-border p-4 shadow-2xs">
           <CardContent className="p-0 space-y-1">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-medium">Vector Index</span>
+              <span className="text-xs font-medium">Fusion Method</span>
               <HardDrive className="h-4 w-4 text-primary" />
             </div>
             <div className="text-2xl font-bold font-mono text-foreground">
-              HNSW
+              RRF
             </div>
             <p className="text-[11px] text-muted-foreground">
-              vector_cosine_ops
+              k = 60 reciprocal rank
             </p>
           </CardContent>
         </Card>

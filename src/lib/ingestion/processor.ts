@@ -9,7 +9,7 @@ import { getStorage } from "@/lib/storage";
 import { extractDocumentText } from "./extractors";
 import { cleanText } from "./cleaner";
 import { chunkDocument } from "./chunker";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import { generateBatchEmbeddings } from "@/lib/ai/gemini";
 
 export const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15 MB
@@ -146,7 +146,7 @@ export async function processDocument(documentId: string): Promise<void> {
       .delete(documentChunks)
       .where(eq(documentChunks.documentVersionId, version.id));
 
-    // 8. Persist chunks with embeddings in database
+    // 8. Persist chunks with embeddings and searchVector in database
     await db.insert(documentChunks).values(
       chunks.map((c, idx) => ({
         documentVersionId: version.id,
@@ -156,6 +156,7 @@ export async function processDocument(documentId: string): Promise<void> {
         section: c.section,
         tokenEstimate: c.tokenEstimate,
         embedding: embeddings[idx],
+        searchVector: sql`to_tsvector('english', ${c.content})`,
       }))
     );
 
@@ -234,9 +235,23 @@ export async function backfillWorkspaceEmbeddings(
   for (let i = 0; i < unindexedChunks.length; i++) {
     await db
       .update(documentChunks)
-      .set({ embedding: embeddings[i] })
+      .set({ 
+        embedding: embeddings[i],
+        searchVector: sql`to_tsvector('english', ${unindexedChunks[i].content})`,
+      })
       .where(eq(documentChunks.id, unindexedChunks[i].chunkId));
   }
+
+  // Ensure any chunks with null search_vector in this workspace are also populated
+  await db.execute(
+    sql`UPDATE document_chunks
+        SET search_vector = to_tsvector('english', content)
+        FROM document_versions
+        INNER JOIN documents ON document_versions.document_id = documents.id
+        WHERE document_chunks.document_version_id = document_versions.id
+          AND documents.workspace_id = ${workspaceId}
+          AND document_chunks.search_vector IS NULL`
+  );
 
   return { backfilledCount: unindexedChunks.length };
 }

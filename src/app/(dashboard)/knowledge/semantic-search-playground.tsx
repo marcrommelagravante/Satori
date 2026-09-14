@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { searchKnowledgeAction } from "@/app/actions/knowledge";
-import type { ScoredChunk } from "@/lib/rag/retrieval";
+import type { ScoredChunk, RetrievalMode } from "@/lib/rag/retrieval";
 
 interface SemanticSearchPlaygroundProps {
   workspaceId: string;
@@ -28,8 +28,9 @@ export function SemanticSearchPlayground({
   hasIndexedChunks,
 }: SemanticSearchPlaygroundProps) {
   const [query, setQuery] = React.useState("");
+  const [mode, setMode] = React.useState<RetrievalMode>("hybrid");
   const [topK, setTopK] = React.useState(5);
-  const [threshold, setThreshold] = React.useState(0.5);
+  const [threshold, setThreshold] = React.useState(0.45);
   const [showOptions, setShowOptions] = React.useState(false);
   const [isSearching, setIsSearching] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -39,7 +40,7 @@ export function SemanticSearchPlayground({
   const [showContextModal, setShowContextModal] = React.useState(false);
   const [copiedContext, setCopiedContext] = React.useState(false);
 
-  const handleSearch = async (searchQuery: string = query) => {
+  const handleSearch = async (searchQuery: string = query, currentMode: RetrievalMode = mode) => {
     if (!searchQuery.trim()) return;
     setIsSearching(true);
     setError(null);
@@ -50,6 +51,7 @@ export function SemanticSearchPlayground({
         query: searchQuery.trim(),
         topK,
         similarityThreshold: threshold,
+        mode: currentMode,
       });
 
       if (res.error) {
@@ -89,27 +91,83 @@ export function SemanticSearchPlayground({
         <CardHeader className="pb-4 bg-muted/20 border-b border-border/50">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                Semantic Retrieval Playground
-              </CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  Knowledge Retrieval Playground
+                </CardTitle>
+                <Badge variant="ai" className="text-[10px] uppercase font-mono tracking-wider">
+                  Phase 5: Hybrid Search
+                </Badge>
+              </div>
               <CardDescription className="text-xs">
-                Query document embeddings using cosine similarity inside PostgreSQL pgvector.
+                Query document chunks using Reciprocal Rank Fusion (RRF) combining dense pgvector embeddings and PostgreSQL full-text search.
               </CardDescription>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowOptions(!showOptions)}
-              className="text-xs h-8 gap-1.5"
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              {showOptions ? "Hide Options" : "Parameters"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowOptions(!showOptions)}
+                className="text-xs h-8 gap-1.5"
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                {showOptions ? "Hide Parameters" : "Parameters"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Mode Selector Tabs */}
+          <div className="mt-3 pt-3 border-t border-border/60 flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground mr-1">Retrieval Mode:</span>
+            <div className="inline-flex rounded-lg bg-muted/60 p-1 border border-border">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("hybrid");
+                  if (query.trim()) handleSearch(query, "hybrid");
+                }}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                  mode === "hybrid"
+                    ? "bg-card text-foreground shadow-2xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Hybrid (Vector + FTS)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("semantic");
+                  if (query.trim()) handleSearch(query, "semantic");
+                }}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                  mode === "semantic"
+                    ? "bg-card text-foreground shadow-2xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Semantic (pgvector)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("keyword");
+                  if (query.trim()) handleSearch(query, "keyword");
+                }}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                  mode === "keyword"
+                    ? "bg-card text-foreground shadow-2xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Keyword (FTS)
+              </button>
+            </div>
           </div>
 
           {showOptions && (
-            <div className="pt-4 mt-3 border-t border-border/60 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div className="pt-3 mt-3 border-t border-border/60 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div className="space-y-1.5">
                 <div className="flex justify-between font-medium text-foreground">
                   <span>Top-K Chunks</span>
@@ -131,26 +189,35 @@ export function SemanticSearchPlayground({
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <div className="flex justify-between font-medium text-foreground">
-                  <span>Min Similarity Threshold</span>
-                  <span className="font-mono text-primary">{(threshold * 100).toFixed(0)}%</span>
+              {mode !== "keyword" ? (
+                <div className="space-y-1.5">
+                  <div className="flex justify-between font-medium text-foreground">
+                    <span>Min Vector Similarity Threshold</span>
+                    <span className="font-mono text-primary">{(threshold * 100).toFixed(0)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="0.95"
+                    step="0.05"
+                    value={threshold}
+                    onChange={(e) => setThreshold(Number(e.target.value))}
+                    className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                    <span>10% (fuzzy)</span>
+                    <span>45% (balanced)</span>
+                    <span>90% (strict)</span>
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min="0.1"
-                  max="0.95"
-                  step="0.05"
-                  value={threshold}
-                  onChange={(e) => setThreshold(Number(e.target.value))}
-                  className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                />
-                <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>10% (fuzzy)</span>
-                  <span>50% (balanced)</span>
-                  <span>90% (strict)</span>
+              ) : (
+                <div className="space-y-1.5 flex flex-col justify-center">
+                  <span className="font-medium text-foreground">Keyword Ranking Function</span>
+                  <p className="text-[11px] text-muted-foreground">
+                    PostgreSQL <code className="font-mono text-primary">ts_rank</code> with <code className="font-mono text-primary">websearch_to_tsquery</code>
+                  </p>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </CardHeader>
@@ -294,13 +361,25 @@ export function SemanticSearchPlayground({
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-muted-foreground font-mono">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] text-muted-foreground font-mono mr-1">
                           ~{chunk.tokenEstimate || Math.ceil(chunk.content.length / 4)} tokens
                         </span>
-                        <Badge variant={scoreVariant} className="font-mono text-xs px-2 py-0.5">
-                          {simPercent}% match
-                        </Badge>
+                        {chunk.retrievalMethod === "hybrid" && chunk.rrfScore !== undefined && (
+                          <Badge variant="ai" className="font-mono text-[11px] px-2 py-0.5">
+                            RRF {chunk.rrfScore.toFixed(4)}
+                          </Badge>
+                        )}
+                        {chunk.similarityScore > 0 && (
+                          <Badge variant={scoreVariant} className="font-mono text-[11px] px-2 py-0.5">
+                            {simPercent}% vector
+                          </Badge>
+                        )}
+                        {chunk.keywordScore !== undefined && chunk.keywordScore > 0 && (
+                          <Badge variant="outline" className="font-mono text-[11px] px-2 py-0.5 border-primary/30 text-primary">
+                            FTS rank {chunk.keywordScore.toFixed(3)}
+                          </Badge>
+                        )}
                       </div>
                     </div>
 
@@ -312,9 +391,18 @@ export function SemanticSearchPlayground({
                       <span className="font-mono text-muted-foreground/70">
                         ID: {chunk.chunkId.slice(0, 8)}... | Chunk #{chunk.chunkIndex + 1}
                       </span>
-                      <span className="font-mono">
-                        Cosine Distance: {chunk.distance.toFixed(4)}
-                      </span>
+                      <div className="flex items-center gap-3 font-mono">
+                        {chunk.retrievalMethod && (
+                          <span className="capitalize text-muted-foreground">
+                            method: {chunk.retrievalMethod}
+                          </span>
+                        )}
+                        {chunk.distance < 1 && (
+                          <span>
+                            Cosine Distance: {chunk.distance.toFixed(4)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

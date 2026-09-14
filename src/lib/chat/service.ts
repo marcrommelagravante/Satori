@@ -12,7 +12,7 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, desc, asc, inArray } from "drizzle-orm";
 import {
-  searchSimilarChunks,
+  searchChunks,
   buildRagContext,
   type SourceAttribution,
 } from "@/lib/rag";
@@ -277,8 +277,9 @@ export async function sendMessage(
       content: m.content,
     }));
 
-  // 4. Semantic vector retrieval across workspace documents
-  const relevantChunks = await searchSimilarChunks({
+  // 4. Hybrid retrieval (vector + FTS with RRF) across workspace documents
+  const relevantChunks = await searchChunks({
+    mode: "hybrid",
     workspaceId,
     query: userText,
     topK: 5,
