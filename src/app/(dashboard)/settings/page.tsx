@@ -3,6 +3,7 @@ import { getUserWorkspaces } from "@/lib/workspaces/service";
 import { Settings, Shield, User, Building } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DeleteWorkspaceSection } from "./delete-workspace-section";
 
 export default async function SettingsPage({
   searchParams,
@@ -75,6 +76,14 @@ export default async function SettingsPage({
             </div>
           </CardContent>
         </Card>
+
+        {activeWorkspace && (
+          <DeleteWorkspaceSection
+            workspaceId={activeWorkspace.id}
+            workspaceName={activeWorkspace.name}
+            userRole={activeWorkspace.role}
+          />
+        )}
       </div>
     </div>
   );

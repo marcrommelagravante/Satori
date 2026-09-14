@@ -12,6 +12,8 @@ import { chunkDocument } from "./chunker";
 import { eq, and, isNull, sql } from "drizzle-orm";
 import { generateBatchEmbeddings } from "@/lib/ai/gemini";
 
+import { validateFileSignature } from "@/lib/security/file-validator";
+
 export const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15 MB
 
 const SUPPORTED_EXTENSIONS = ["pdf", "docx", "txt"];
@@ -44,28 +46,35 @@ export async function uploadAndRegisterDocument({
     );
   }
 
-  // 2. Validate extension
-  const ext = filename.split(".").pop()?.toLowerCase() || "";
-  if (!SUPPORTED_EXTENSIONS.includes(ext)) {
-    throw new Error(
-      `Unsupported file type .${ext}. Only PDF, DOCX, and TXT are supported.`
-    );
+  // 2. Validate file signature (magic bytes) & sanitize filename
+  const validation = validateFileSignature(buffer, filename);
+  if (!validation.valid) {
+    throw new Error(validation.error || "Invalid file format");
+  }
+
+  const safeFilename = validation.sanitizedFilename;
+
+  // Resolve canonical MIME type based on detected signature if generic octet-stream
+  let resolvedMimeType = mimeType;
+  if (mimeType === "application/octet-stream" || !mimeType) {
+    if (validation.detectedType === "pdf") resolvedMimeType = "application/pdf";
+    else if (validation.detectedType === "docx") resolvedMimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    else if (validation.detectedType === "txt") resolvedMimeType = "text/plain";
   }
 
   // 3. Generate storage key and upload
-  const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const storageKey = `workspaces/${workspaceId}/${Date.now()}-${safeFilename}`;
+  const storageKey = `workspaces/${workspaceId}/${Date.now()}-${safeFilename.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
 
   const storage = getStorage();
-  const { url, key } = await storage.upload(storageKey, buffer, mimeType);
+  const { url, key } = await storage.upload(storageKey, buffer, resolvedMimeType);
 
   // 4. Create document record in database with status 'pending'
   const [doc] = await db
     .insert(documents)
     .values({
       workspaceId,
-      name: filename,
-      mimeType,
+      name: safeFilename,
+      mimeType: resolvedMimeType,
       sizeBytes: buffer.length,
       status: "pending",
       category: category || "General",
@@ -195,11 +204,16 @@ export async function deleteDocumentAndStorage(documentId: string): Promise<void
   const storage = getStorage();
   for (const v of versions) {
     if (v.storageKey) {
-      await storage.delete(v.storageKey);
+      try {
+        await storage.delete(v.storageKey);
+      } catch (storageErr) {
+        // Storage deletion failure must not prevent database cascade from completing
+        console.warn(`[STORAGE DELETE WARNING] Could not remove key ${v.storageKey}:`, storageErr);
+      }
     }
   }
 
-  // Deleting document cascades to document_versions and document_chunks
+  // Deleting document cascades to document_versions and document_chunks in Neon
   await db.delete(documents).where(eq(documents.id, documentId));
 }
 

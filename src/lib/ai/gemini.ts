@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import crypto from "crypto";
+import { PROMPT_INJECTION_DEFENSE_INSTRUCTION } from "@/lib/security/prompt-boundary";
 
 export const EMBEDDING_MODEL = "gemini-embedding-001";
 export const EMBEDDING_DIMENSION = 768;
@@ -187,6 +188,8 @@ export interface GenerateGroundedResponseResult {
 
 const DEFAULT_SYSTEM_INSTRUCTION = `You are Satori, an intelligent workspace knowledge assistant.
 Your task is to answer the user's question accurately, concisely, and objectively based ONLY on the provided workspace context enclosed in <context> tags.
+
+${PROMPT_INJECTION_DEFENSE_INSTRUCTION}
 
 CITATION RULES:
 1. Every factual statement, policy, metric, or requirement derived from the context MUST include an inline citation formatted exactly as [source-N] corresponding to the <source id="..."> attribute (e.g., [source-1], [source-2]).

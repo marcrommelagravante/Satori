@@ -4,6 +4,7 @@ import { requireAuth } from "@/lib/auth/session";
 import { requireWorkspaceMember } from "@/lib/workspaces/guard";
 import { searchChunks, buildRagContext, type RetrievalMode } from "@/lib/rag";
 import { backfillWorkspaceEmbeddings } from "@/lib/ingestion/processor";
+import { enforceRateLimit } from "@/lib/security/rate-limiter";
 import { revalidatePath } from "next/cache";
 
 export interface SearchKnowledgeInput {
@@ -15,7 +16,16 @@ export interface SearchKnowledgeInput {
 }
 
 export async function searchKnowledgeAction(input: SearchKnowledgeInput) {
-  await requireAuth();
+  const user = await requireAuth();
+
+  // Rate limiting check
+  const rateLimit = enforceRateLimit("search", user.id);
+  if (!rateLimit.allowed) {
+    return {
+      error: rateLimit.error,
+      retryAfterSeconds: rateLimit.retryAfterSeconds,
+    };
+  }
 
   const { workspaceId, query, topK, similarityThreshold, mode } = input;
   if (!workspaceId || !query || query.trim().length === 0) {

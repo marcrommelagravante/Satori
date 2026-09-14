@@ -13,6 +13,7 @@ import {
 } from "@/lib/chat";
 import { type SourceAttribution } from "@/lib/rag";
 import { type AgentToolCallLog } from "@/lib/ai/agent";
+import { enforceRateLimit } from "@/lib/security/rate-limiter";
 import { revalidatePath } from "next/cache";
 
 export interface SendMessageActionInput {
@@ -46,6 +47,7 @@ export interface SendMessageActionResponse {
   reportId?: string;
   toolCalls?: AgentToolCallLog[];
   isAgent?: boolean;
+  retryAfterSeconds?: number;
   error?: string;
 }
 
@@ -57,6 +59,16 @@ export async function sendMessageAction(
 ): Promise<SendMessageActionResponse> {
   const user = await requireAuth();
   const { conversationId, workspaceId, content } = input;
+
+  // Rate limiting check
+  const rateLimit = enforceRateLimit("chat", user.id);
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      error: rateLimit.error,
+      retryAfterSeconds: rateLimit.retryAfterSeconds,
+    };
+  }
 
   if (!conversationId || !workspaceId || !content || content.trim().length === 0) {
     return {

@@ -1,3 +1,5 @@
+import { sanitizeUntrustedDocumentText } from "@/lib/security/prompt-boundary";
+
 export interface ContextChunk {
   chunkId: string;
   documentId: string;
@@ -90,8 +92,8 @@ export function buildRagContext(
           : chunk.content,
     };
 
-    // Sanitize any accidental closing tags inside document content
-    const sanitizedContent = chunk.content.replace(/<\/source>/gi, "&lt;/source&gt;");
+    // Sanitize untrusted content and defang injection attempts
+    const sanitizedContent = sanitizeUntrustedDocumentText(chunk.content);
 
     const attrs = [
       `id="${sourceId}"`,

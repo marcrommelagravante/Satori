@@ -1,6 +1,14 @@
 import { db } from "@/lib/db";
-import { workspaces, workspaceMembers, type Workspace, type WorkspaceRole } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import {
+  workspaces,
+  workspaceMembers,
+  documents,
+  documentVersions,
+  type Workspace,
+  type WorkspaceRole,
+} from "@/lib/db/schema";
+import { eq, and, inArray } from "drizzle-orm";
+import { getStorage } from "@/lib/storage";
 import type { SessionUser } from "@/lib/auth/session";
 
 function slugify(text: string): string {
@@ -97,4 +105,55 @@ export async function getOrCreateDefaultWorkspace(
 
   const defaultName = user.name ? `${user.name}'s Workspace` : "My Workspace";
   return createWorkspace(user.id, defaultName);
+}
+
+export async function deleteWorkspace(
+  workspaceId: string,
+  userId: string
+): Promise<boolean> {
+  // 1. Verify that user is owner
+  const member = await getWorkspaceById(workspaceId, userId);
+  if (!member || member.role !== "owner") {
+    throw new Error("Unauthorized: only workspace owners can delete a workspace.");
+  }
+
+  // 2. Fetch and purge all physical files in storage
+  try {
+    const workspaceDocs = await db
+      .select({ id: documents.id })
+      .from(documents)
+      .where(eq(documents.workspaceId, workspaceId));
+
+    if (workspaceDocs.length > 0) {
+      const docIds = workspaceDocs.map((d) => d.id);
+      const versions = await db
+        .select({ storageKey: documentVersions.storageKey })
+        .from(documentVersions)
+        .where(inArray(documentVersions.documentId, docIds));
+
+      const storage = getStorage();
+      for (const v of versions) {
+        if (v.storageKey) {
+          try {
+            await storage.delete(v.storageKey);
+          } catch (storageErr) {
+            console.warn(
+              `[STORAGE DELETE WARNING] Failed to delete key ${v.storageKey}:`,
+              storageErr
+            );
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn(
+      "[WORKSPACE DELETE WARNING] Error querying files for storage cleanup, continuing cascade:",
+      err
+    );
+  }
+
+  // 3. Cascade delete workspace (Neon DB cascades to documents, chunks, conversations, messages, reports, eval runs/cases, and memberships)
+  await db.delete(workspaces).where(eq(workspaces.id, workspaceId));
+
+  return true;
 }

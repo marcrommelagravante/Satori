@@ -1,9 +1,12 @@
 import { getGenAIClient } from "@/lib/ai/gemini";
 import { AGENT_TOOLS } from "./tools/definitions";
 import { executeTool, ToolExecutionContext } from "./tools/executor";
+import { PROMPT_INJECTION_DEFENSE_INSTRUCTION } from "@/lib/security/prompt-boundary";
 
 export const AGENT_SYSTEM_PROMPT = `You are Satori Agent, an autonomous document intelligence assistant for knowledge workspaces.
 You have access to tools to search, read, summarize, compare documents, and create structured reports in this workspace.
+
+${PROMPT_INJECTION_DEFENSE_INSTRUCTION}
 
 CRITICAL INSTRUCTIONS:
 1. ALWAYS use the provided tools to retrieve real workspace information. Do not guess or invent document IDs, content, or quotes.

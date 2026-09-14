@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SeedDemoButton } from "./seed-demo-button";
 
 export default async function DashboardPage({
   searchParams,
@@ -80,7 +81,8 @@ export default async function DashboardPage({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <SeedDemoButton workspaceId={activeWorkspace.id} />
           <Button asChild variant="outline" size="sm">
             <Link href={`/chat?ws=${activeWorkspace.id}`}>
               <BotMessageSquare className="h-4 w-4" />

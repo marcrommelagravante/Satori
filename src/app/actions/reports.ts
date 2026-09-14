@@ -7,8 +7,10 @@ import {
   getReport,
   deleteReport,
   createReport,
-  CreateReportInput,
+  type CreateReportInput,
 } from "@/lib/reports";
+import { logAuditEvent } from "@/lib/security/audit";
+import { enforceRateLimit } from "@/lib/security/rate-limiter";
 import { revalidatePath } from "next/cache";
 
 export async function getReportsAction(workspaceId: string) {
@@ -45,11 +47,50 @@ export async function getReportAction(reportId: string, workspaceId: string) {
   }
 }
 
+export async function createReportAction(input: CreateReportInput) {
+  const user = await requireAuth();
+  await requireWorkspaceMember(input.workspaceId, "member");
+
+  // Enforce rate limit
+  const rateLimit = enforceRateLimit("reports", user.id);
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      error: rateLimit.error,
+      retryAfterSeconds: rateLimit.retryAfterSeconds,
+    };
+  }
+
+  try {
+    const report = await createReport(input);
+
+    await logAuditEvent({
+      workspaceId: input.workspaceId,
+      userId: user.id,
+      action: "report.generate",
+      resourceType: "report",
+      resourceId: report.id,
+      metadata: {
+        title: report.title,
+        reportType: report.type,
+      },
+    });
+
+    revalidatePath("/reports");
+    return { success: true, report };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to create report",
+    };
+  }
+}
+
 export async function deleteReportAction(
   reportId: string,
   workspaceId: string
 ) {
-  await requireAuth();
+  const user = await requireAuth();
   await requireWorkspaceMember(workspaceId, "member");
 
   try {
@@ -57,6 +98,14 @@ export async function deleteReportAction(
     if (!ok) {
       return { success: false, error: "Report not found or already deleted" };
     }
+
+    await logAuditEvent({
+      workspaceId,
+      userId: user.id,
+      action: "report.delete",
+      resourceType: "report",
+      resourceId: reportId,
+    });
 
     revalidatePath("/reports");
     return { success: true };

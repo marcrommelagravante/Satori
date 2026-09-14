@@ -34,3 +34,34 @@ export async function createWorkspaceAction(formData: FormData): Promise<void> {
 
   redirect(`/dashboard?ws=${workspace.id}`);
 }
+
+export async function deleteWorkspaceAction(workspaceId: string): Promise<{ success: boolean; error?: string }> {
+  const user = await requireAuth();
+
+  if (!workspaceId) {
+    return { success: false, error: "Workspace ID is required" };
+  }
+
+  try {
+    const { deleteWorkspace } = await import("@/lib/workspaces/service");
+    const { logAuditEvent } = await import("@/lib/security/audit");
+
+    await deleteWorkspace(workspaceId, user.id);
+
+    // Audit log
+    await logAuditEvent({
+      workspaceId,
+      userId: user.id,
+      action: "workspace.delete",
+      resourceType: "workspace",
+      resourceId: workspaceId,
+    });
+
+    return { success: true };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to delete workspace",
+    };
+  }
+}

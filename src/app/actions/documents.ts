@@ -10,6 +10,8 @@ import {
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { enforceRateLimit } from "@/lib/security/rate-limiter";
+import { logAuditEvent } from "@/lib/security/audit";
 import { revalidatePath } from "next/cache";
 
 export async function uploadDocumentAction(formData: FormData) {
@@ -26,6 +28,15 @@ export async function uploadDocumentAction(formData: FormData) {
   // Security guard: verify user has membership in workspace
   await requireWorkspaceMember(workspaceId, "member");
 
+  // Rate limiting check
+  const rateLimit = enforceRateLimit("upload", user.id);
+  if (!rateLimit.allowed) {
+    return {
+      error: rateLimit.error,
+      retryAfterSeconds: rateLimit.retryAfterSeconds,
+    };
+  }
+
   try {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -36,6 +47,20 @@ export async function uploadDocumentAction(formData: FormData) {
       mimeType: file.type || "application/octet-stream",
       buffer,
       category,
+    });
+
+    // Record audit event
+    await logAuditEvent({
+      workspaceId,
+      userId: user.id,
+      action: "document.upload",
+      resourceType: "document",
+      resourceId: doc.id,
+      metadata: {
+        filename: file.name,
+        sizeBytes: buffer.length,
+        category,
+      },
     });
 
     revalidatePath("/documents");
@@ -98,6 +123,19 @@ export async function deleteDocumentAction(documentId: string) {
 
   try {
     await deleteDocumentAndStorage(documentId);
+
+    // Record audit event
+    const user = await requireAuth();
+    await logAuditEvent({
+      workspaceId: doc.workspaceId,
+      userId: user.id,
+      action: "document.delete",
+      resourceType: "document",
+      resourceId: documentId,
+      metadata: {
+        documentName: doc.name,
+      },
+    });
 
     revalidatePath("/documents");
     revalidatePath("/dashboard");

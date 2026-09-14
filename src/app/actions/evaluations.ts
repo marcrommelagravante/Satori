@@ -13,6 +13,8 @@ import {
   runEvaluationSuite,
   type CreateEvalCaseInput,
 } from "@/lib/evaluations";
+import { enforceRateLimit } from "@/lib/security/rate-limiter";
+import { logAuditEvent } from "@/lib/security/audit";
 import { revalidatePath } from "next/cache";
 
 export async function getEvalCasesAction(workspaceId: string) {
@@ -98,6 +100,16 @@ export async function triggerEvaluationRunAction(
   const user = await requireAuth();
   await requireWorkspaceMember(workspaceId, "member");
 
+  // Enforce rate limiting
+  const rateLimit = enforceRateLimit("evaluation", user.id);
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      error: rateLimit.error,
+      retryAfterSeconds: rateLimit.retryAfterSeconds,
+    };
+  }
+
   try {
     const result = await runEvaluationSuite({
       workspaceId,
@@ -105,6 +117,19 @@ export async function triggerEvaluationRunAction(
       runName,
       caseIds,
     });
+
+    await logAuditEvent({
+      workspaceId,
+      userId: user.id,
+      action: "evaluation.run",
+      resourceType: "evaluation",
+      resourceId: result.run.id,
+      metadata: {
+        runName: result.run.name,
+        casesCount: result.results.length,
+      },
+    });
+
     revalidatePath("/evaluations");
     return { success: true, run: result.run, results: result.results };
   } catch (err) {
