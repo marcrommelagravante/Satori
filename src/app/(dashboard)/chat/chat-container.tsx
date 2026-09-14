@@ -138,7 +138,7 @@ export function ChatContainer({
     await deleteConversationAction(id, workspaceId);
   };
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, agentMode?: boolean) => {
     if (!content.trim() || isLoading) return;
 
     let targetConvId = activeConversationId;
@@ -174,12 +174,16 @@ export function ChatContainer({
         conversationId: targetConvId,
         workspaceId,
         content,
+        agentMode,
       });
 
       if (res.success && res.assistantMessage) {
         const assistantWithCitations: MessageWithCitations = {
           ...res.assistantMessage,
           citations: res.citations || [],
+          toolCalls: res.toolCalls,
+          reportId: res.reportId,
+          isAgent: res.isAgent,
         };
 
         // Replace optimistic user message with real one from DB and add assistant message

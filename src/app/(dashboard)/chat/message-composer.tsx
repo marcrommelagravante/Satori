@@ -1,21 +1,22 @@
-"use client";
-
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Sparkles, Loader2 } from "lucide-react";
+import { ArrowUp, Sparkles, Loader2, Bot } from "lucide-react";
 
 interface MessageComposerProps {
-  onSend: (content: string) => void;
+  onSend: (content: string, agentMode?: boolean) => void;
   disabled?: boolean;
   placeholder?: string;
+  defaultAgentMode?: boolean;
 }
 
 export function MessageComposer({
   onSend,
   disabled = false,
   placeholder = "Ask a question about your documents...",
+  defaultAgentMode = false,
 }: MessageComposerProps) {
   const [content, setContent] = useState("");
+  const [agentMode, setAgentMode] = useState(defaultAgentMode);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea height as user types
@@ -39,7 +40,7 @@ export function MessageComposer({
   const handleSend = () => {
     const trimmed = content.trim();
     if (!trimmed || disabled) return;
-    onSend(trimmed);
+    onSend(trimmed, agentMode);
     setContent("");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -48,13 +49,23 @@ export function MessageComposer({
 
   return (
     <div className="p-4 border-t border-border bg-card/80 backdrop-blur-xs">
-      <div className="relative rounded-2xl border border-border bg-background focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-xs">
+      <div
+        className={`relative rounded-2xl border bg-background focus-within:ring-2 transition-all shadow-xs ${
+          agentMode
+            ? "border-primary/60 focus-within:border-primary focus-within:ring-primary/25 ring-1 ring-primary/20"
+            : "border-border focus-within:border-primary/50 focus-within:ring-primary/20"
+        }`}
+      >
         <textarea
           ref={textareaRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={
+            agentMode
+              ? "Agent Mode active — ask to compare documents, summarize, or create reports..."
+              : placeholder
+          }
           disabled={disabled}
           rows={1}
           maxLength={2000}
@@ -62,9 +73,32 @@ export function MessageComposer({
         />
 
         <div className="absolute bottom-2.5 left-4 right-2.5 flex items-center justify-between pointer-events-none">
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pointer-events-auto">
-            <Sparkles className="h-3 w-3 text-secondary" />
-            <span className="hidden sm:inline">Grounded with Gemini & pgvector</span>
+          <div className="flex items-center gap-2 pointer-events-auto">
+            <button
+              type="button"
+              onClick={() => setAgentMode(!agentMode)}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                agentMode
+                  ? "bg-primary text-primary-foreground shadow-xs ring-1 ring-primary/40"
+                  : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
+              }`}
+              title={
+                agentMode
+                  ? "Agent Mode: Autonomous multi-step tool reasoning enabled"
+                  : "Click to enable Agent Mode"
+              }
+            >
+              <Bot className="h-3.5 w-3.5" />
+              <span>Agent Mode</span>
+              {agentMode && (
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              )}
+            </button>
+
+            <div className="hidden sm:flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Sparkles className="h-3 w-3 text-secondary" />
+              <span>{agentMode ? "Multi-tool reasoning" : "Grounded RAG"}</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 pointer-events-auto">

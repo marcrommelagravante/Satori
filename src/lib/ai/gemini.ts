@@ -6,7 +6,7 @@ export const EMBEDDING_DIMENSION = 768;
 
 let genAIClient: GoogleGenAI | null = null;
 
-function getGenAIClient(): GoogleGenAI | null {
+export function getGenAIClient(): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey.trim() === "") {
     return null;

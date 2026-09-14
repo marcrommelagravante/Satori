@@ -5,6 +5,7 @@ import {
   integer,
   doublePrecision,
   pgEnum,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { workspaces } from "./workspaces";
 import { users } from "./users";
@@ -77,6 +78,7 @@ export const aiRuns = pgTable("ai_runs", {
   outputTokens: integer("output_tokens"),
   status: text("status").notNull(),
   errorCode: text("error_code"),
+  toolCalls: jsonb("tool_calls"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 

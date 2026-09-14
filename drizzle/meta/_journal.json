@@ -15,6 +15,13 @@
       "when": 1789385649839,
       "tag": "0001_lazy_morgan_stark",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789392473417,
+      "tag": "0002_unusual_william_stryker",
+      "breakpoints": true
     }
   ]
 }

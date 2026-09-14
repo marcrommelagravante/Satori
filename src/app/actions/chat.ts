@@ -12,12 +12,14 @@ import {
   type CitationDetail,
 } from "@/lib/chat";
 import { type SourceAttribution } from "@/lib/rag";
+import { type AgentToolCallLog } from "@/lib/ai/agent";
 import { revalidatePath } from "next/cache";
 
 export interface SendMessageActionInput {
   conversationId: string;
   workspaceId: string;
   content: string;
+  agentMode?: boolean;
 }
 
 export interface SendMessageActionResponse {
@@ -41,6 +43,9 @@ export interface SendMessageActionResponse {
   citations?: CitationDetail[];
   citationMap?: Record<string, SourceAttribution>;
   latencyMs?: number;
+  reportId?: string;
+  toolCalls?: AgentToolCallLog[];
+  isAgent?: boolean;
   error?: string;
 }
 
@@ -69,10 +74,14 @@ export async function sendMessageAction(
       workspaceId,
       userId: user.id,
       content: content.trim(),
+      agentMode: input.agentMode,
     });
 
     revalidatePath("/chat");
     revalidatePath("/dashboard");
+    if (result.reportId) {
+      revalidatePath("/reports");
+    }
 
     return {
       success: true,
@@ -95,6 +104,9 @@ export async function sendMessageAction(
       citations: result.citations,
       citationMap: result.citationMap,
       latencyMs: result.latencyMs,
+      reportId: result.reportId,
+      toolCalls: result.toolCalls,
+      isAgent: result.isAgent,
     };
   } catch (error) {
     console.error("sendMessageAction error:", error);

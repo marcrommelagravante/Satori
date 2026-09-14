@@ -17,6 +17,7 @@ import {
   type SourceAttribution,
 } from "@/lib/rag";
 import { generateGroundedResponse } from "@/lib/ai/gemini";
+import { runAgentLoop, detectAgentMode, type AgentToolCallLog } from "@/lib/ai/agent";
 
 export interface CitationDetail {
   id: string;
@@ -32,6 +33,9 @@ export interface CitationDetail {
 
 export interface MessageWithCitations extends Message {
   citations?: CitationDetail[];
+  toolCalls?: AgentToolCallLog[];
+  reportId?: string;
+  isAgent?: boolean;
 }
 
 export interface SendMessageOptions {
@@ -39,6 +43,7 @@ export interface SendMessageOptions {
   workspaceId: string;
   userId: string;
   content: string;
+  agentMode?: boolean;
 }
 
 export interface SendMessageResult {
@@ -47,6 +52,9 @@ export interface SendMessageResult {
   citations: CitationDetail[];
   citationMap: Record<string, SourceAttribution>;
   latencyMs: number;
+  reportId?: string;
+  toolCalls?: AgentToolCallLog[];
+  isAgent?: boolean;
 }
 
 /**
@@ -255,6 +263,71 @@ export async function sendMessage(
       content: userText,
     })
     .returning();
+
+  // Check if agent mode is explicitly requested or detected via query analysis
+  const isAgent = options.agentMode ?? detectAgentMode(userText);
+
+  if (isAgent) {
+    const agentResult = await runAgentLoop({
+      workspaceId,
+      userId,
+      conversationId,
+      userPrompt: userText,
+    });
+
+    const [assistantMessage] = await db
+      .insert(messages)
+      .values({
+        conversationId,
+        role: "assistant",
+        content: agentResult.text,
+        model: agentResult.model,
+      })
+      .returning();
+
+    // Record AI run observability with tool calls
+    try {
+      await db.insert(aiRuns).values({
+        workspaceId,
+        userId,
+        conversationId,
+        model: agentResult.model,
+        operation: "chat_agent_loop",
+        latencyMs: agentResult.latencyMs,
+        inputTokens: agentResult.inputTokens,
+        outputTokens: agentResult.outputTokens,
+        status: "success",
+        toolCalls: agentResult.toolCalls,
+      });
+    } catch (logErr) {
+      console.warn("Failed to write ai_runs record for agent loop:", logErr);
+    }
+
+    // Auto-title conversation if this is the first turn
+    if (conv.title === "New Conversation" || conv.title.trim() === "") {
+      let newTitle = userText.replace(/[#*`]/g, "").trim();
+      if (newTitle.length > 50) {
+        newTitle = newTitle.slice(0, 47) + "...";
+      }
+      await updateConversationTitle(conversationId, newTitle);
+    } else {
+      await db
+        .update(conversations)
+        .set({ updatedAt: new Date() })
+        .where(eq(conversations.id, conversationId));
+    }
+
+    return {
+      userMessage,
+      assistantMessage,
+      citations: [],
+      citationMap: {},
+      latencyMs: agentResult.latencyMs,
+      reportId: agentResult.createdReportId,
+      toolCalls: agentResult.toolCalls,
+      isAgent: true,
+    };
+  }
 
   // 3. Fetch recent history for multi-turn conversational context
   const previousMessages = await db

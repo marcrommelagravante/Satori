@@ -12,7 +12,9 @@ import {
   FileText,
   RotateCcw,
   BotMessageSquare,
+  Bot,
 } from "lucide-react";
+import { AgentThinking } from "@/components/chat/agent-thinking";
 
 interface MessageThreadProps {
   messages: MessageWithCitations[];
@@ -181,14 +183,24 @@ export function MessageThread({
               {!isUser && (
                 <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-border/60">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-xs text-foreground">
-                      Satori AI
+                    <span className="font-semibold text-xs text-foreground flex items-center gap-1">
+                      {msg.isAgent ? (
+                        <>
+                          <Bot className="h-3.5 w-3.5 text-primary" /> Satori Agent
+                        </>
+                      ) : (
+                        "Satori AI"
+                      )}
                     </span>
                     <Badge
                       variant="outline"
-                      className="text-[10px] text-secondary border-secondary/30 bg-secondary/10 px-1.5 py-0"
+                      className={`text-[10px] px-1.5 py-0 ${
+                        msg.isAgent
+                          ? "text-primary border-primary/30 bg-primary/10"
+                          : "text-secondary border-secondary/30 bg-secondary/10"
+                      }`}
                     >
-                      {msg.model || "gemini-3.6-flash"}
+                      {msg.isAgent ? "agent-loop" : msg.model || "gemini-3.6-flash"}
                     </Badge>
                   </div>
                   <span className="text-[10px] text-muted-foreground">
@@ -212,6 +224,14 @@ export function MessageThread({
                   <div>{renderMessageContent(msg.content, msg.citations)}</div>
                 )}
               </div>
+
+              {/* Agent Tool Trace & Report Link */}
+              {!isUser && (msg.toolCalls || msg.reportId) && (
+                <AgentThinking
+                  toolCalls={msg.toolCalls}
+                  reportId={msg.reportId}
+                />
+              )}
 
               {/* Citations Footer for Assistant Messages */}
               {!isUser && msg.citations && msg.citations.length > 0 && (
