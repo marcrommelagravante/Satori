@@ -4,6 +4,7 @@ import Credentials from "next-auth/providers/credentials";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { createWorkspace } from "@/lib/workspaces/service";
 import { eq } from "drizzle-orm";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -56,6 +57,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             name,
           })
           .returning();
+
+        // Provision initial default workspace strictly ONCE for new account
+        await createWorkspace(
+          newUser.id,
+          newUser.name ? `${newUser.name}'s Workspace` : "My Workspace"
+        );
 
         return {
           id: newUser.id,

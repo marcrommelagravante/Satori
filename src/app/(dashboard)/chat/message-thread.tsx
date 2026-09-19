@@ -107,40 +107,34 @@ export function MessageThread({
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-      {/* Empty State */}
+      {/* Empty State matching Mockup Panel 4 */}
       {messages.length === 0 && (
-        <div className="max-w-xl mx-auto py-12 text-center space-y-6">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary/15 text-secondary shadow-xs">
-            <BotMessageSquare className="h-7 w-7" />
+        <div className="max-w-md mx-auto my-auto py-12 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-secondary/15 text-secondary shadow-2xs mb-4">
+            <Sparkles className="h-6 w-6" />
           </div>
 
-          <div className="space-y-2">
-            <h3 className="text-lg font-bold text-foreground">
-              Ask anything about your workspace documents
-            </h3>
-            <p className="text-xs text-muted-foreground max-w-md mx-auto">
-              Satori retrieves relevant chunks from{" "}
-              <strong>{workspaceName || "your workspace"}</strong> and generates
-              verifiable answers with real source citations.
-            </p>
-          </div>
+          <h3 className="font-heading text-lg font-bold text-foreground mb-1.5">
+            How can I help you today?
+          </h3>
+          <p className="text-xs text-muted-foreground max-w-xs mx-auto mb-6 leading-relaxed">
+            I can search your documents, answer questions, summarize information, and more.
+          </p>
 
-          <div className="pt-2 space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Suggested Questions
-            </p>
-            <div className="flex flex-col gap-2 max-w-md mx-auto">
-              {suggestedQuestions.map((q, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => onSuggestedQuestionClick(q)}
-                  className="p-3 text-left rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-accent/30 text-xs text-foreground transition-all flex items-center justify-between group shadow-2xs"
-                >
-                  <span>{q}</span>
-                  <Sparkles className="h-3.5 w-3.5 text-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
-              ))}
-            </div>
+          <div className="flex flex-col gap-2 max-w-sm mx-auto">
+            {[
+              "Summarize the key points in the latest report",
+              "What are the company's HR policies?",
+              "Find information about the product roadmap",
+            ].map((q, idx) => (
+              <button
+                key={idx}
+                onClick={() => onSuggestedQuestionClick(q)}
+                className="px-4 py-2.5 text-center rounded-full border border-border/80 bg-card hover:border-primary/50 hover:bg-muted/40 text-xs text-foreground font-medium transition-all shadow-2xs cursor-pointer"
+              >
+                {q}
+              </button>
+            ))}
           </div>
         </div>
       )}

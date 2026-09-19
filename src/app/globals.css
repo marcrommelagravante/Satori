@@ -1,6 +1,13 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *, .dark, .dark *));
+
 @theme {
+  --font-heading: var(--font-heading), system-ui, sans-serif;
+  --font-body: var(--font-body), system-ui, sans-serif;
+  --font-mono: var(--font-mono), monospace;
+  --font-sans: var(--font-body), system-ui, sans-serif;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -31,7 +38,7 @@
 }
 
 :root {
-  --background: #FAFAF9;
+  --background: #EEF2F6;
   --foreground: #171717;
   --card: #FFFFFF;
   --card-foreground: #171717;
@@ -43,7 +50,7 @@
   --primary-foreground: #FFFFFF;
   --primary-dark: #3730A3;
 
-  /* Satori Brand Secondary: Violet #7C3AED (AI) */
+  /* Satori Brand Secondary: Violet #7C3AED (AI Strictly) */
   --secondary: #7C3AED;
   --secondary-foreground: #FFFFFF;
 
@@ -52,11 +59,11 @@
   --accent-foreground: #6D28D9;
   --lavender: #A78BFA;
 
-  --muted: #F5F5F4;
-  --muted-foreground: #737373;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
   
-  --border: #E5E5E5;
-  --input: #E5E5E5;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
   --ring: #4F46E5;
   
   --radius: 0.625rem;
@@ -71,13 +78,13 @@
 .dark {
   --background: #0B0B12;
   --foreground: #F5F5F5;
-  --card: #12121A;
+  --card: #13121E;
   --card-foreground: #F5F5F5;
-  --popover: #12121A;
+  --popover: #13121E;
   --popover-foreground: #F5F5F5;
 
   /* Satori Brand Primary: Indigo */
-  --primary: #6366F1;
+  --primary: #6D69F5;
   --primary-foreground: #FFFFFF;
   --primary-dark: #4F46E5;
 
@@ -93,13 +100,44 @@
   --muted: #181824;
   --muted-foreground: #A1A1AA;
 
-  --border: #27272A;
-  --input: #27272A;
-  --ring: #6366F1;
+  --border: #2A2840;
+  --input: #2A2840;
+  --ring: #6D69F5;
+}
+
+/* Density Scales */
+[data-density="high"] {
+  --row-gap: 8px;
+  --section-pad: 16px;
+  --card-pad: 12px;
+  --item-height: 36px;
+}
+
+[data-density="medium"] {
+  --row-gap: 12px;
+  --section-pad: 24px;
+  --card-pad: 16px;
+  --item-height: 44px;
+}
+
+[data-density="low"] {
+  --row-gap: 16px;
+  --section-pad: 32px;
+  --card-pad: 24px;
+  --item-height: 52px;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), system-ui, sans-serif;
+}
+
+code, pre, .font-mono {
+  font-family: var(--font-mono), monospace;
 }

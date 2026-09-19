@@ -9,13 +9,8 @@ import {
   Play,
   History,
   Activity,
-  Sparkles,
   Loader2,
   RefreshCw,
-  BookmarkCheck,
-  CheckCircle2,
-  XCircle,
-  FileText,
 } from "lucide-react";
 import { EvalScorecard } from "./eval-scorecard";
 import { EvalCasesTable } from "./eval-cases-table";

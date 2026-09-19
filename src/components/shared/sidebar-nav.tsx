@@ -1,25 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
-  LayoutDashboard,
-  Files,
+  LayoutGrid,
+  FileText,
   Network,
-  BotMessageSquare,
-  FileSpreadsheet,
-  Gauge,
+  Sparkles,
+  FileBarChart,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Documents", href: "/documents", icon: Files },
-  { name: "Knowledge", href: "/knowledge", icon: Network },
-  { name: "AI Chat", href: "/chat", icon: BotMessageSquare, isAi: true },
-  { name: "Reports", href: "/reports", icon: FileSpreadsheet },
-  { name: "Evaluations", href: "/evaluations", icon: Gauge },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutGrid },
+  { name: "Documents", href: "/documents", icon: FileText },
+  { name: "Knowledge Hub", href: "/knowledge", icon: Network },
+  { name: "AI Chat", href: "/chat", icon: Sparkles },
+  { name: "Reports", href: "/reports", icon: FileBarChart },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -29,6 +27,8 @@ interface SidebarNavProps {
 
 export function SidebarNav({ workspaceId }: SidebarNavProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeWorkspaceId = searchParams.get("ws") || workspaceId;
 
   return (
     <nav className="space-y-1">
@@ -36,40 +36,32 @@ export function SidebarNav({ workspaceId }: SidebarNavProps) {
         const Icon = item.icon;
         const isActive =
           pathname === item.href || pathname.startsWith(`${item.href}/`);
-        const href = `${item.href}?ws=${workspaceId}`;
+        const href = `${item.href}?ws=${activeWorkspaceId}`;
 
         return (
           <Link
             key={item.name}
             href={href}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all group select-none",
+              "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all group select-none",
               isActive
-                ? item.isAi
-                  ? "bg-secondary/15 text-secondary font-semibold"
-                  : "bg-primary/10 text-primary font-semibold"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-[#EEF2FF] dark:bg-indigo-950/50 text-[#4F46E5] dark:text-indigo-400 font-semibold"
+                : "text-slate-500 dark:text-muted-foreground hover:bg-slate-50 dark:hover:bg-muted/50 hover:text-slate-900 dark:hover:text-foreground"
             )}
           >
             <Icon
               className={cn(
-                "h-4 w-4 shrink-0 transition-transform group-hover:scale-110",
+                "h-4 w-4 shrink-0 transition-transform group-hover:scale-105",
                 isActive
-                  ? item.isAi
-                    ? "text-secondary"
-                    : "text-primary"
-                  : "text-muted-foreground group-hover:text-foreground"
+                  ? "text-[#4F46E5] dark:text-indigo-400"
+                  : "text-slate-400 dark:text-muted-foreground group-hover:text-slate-900 dark:group-hover:text-foreground"
               )}
             />
-            <span>{item.name}</span>
-            {item.isAi && (
-              <span className="ml-auto rounded-full bg-secondary/15 px-1.5 py-0.5 text-[10px] font-semibold text-secondary">
-                AI
-              </span>
-            )}
+            <span className="tracking-tight">{item.name}</span>
           </Link>
         );
       })}
     </nav>
   );
 }
+

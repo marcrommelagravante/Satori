@@ -12,7 +12,7 @@ interface MessageComposerProps {
 export function MessageComposer({
   onSend,
   disabled = false,
-  placeholder = "Ask a question about your documents...",
+  placeholder = "Ask a question...",
   defaultAgentMode = false,
 }: MessageComposerProps) {
   const [content, setContent] = useState("");
@@ -112,7 +112,7 @@ export function MessageComposer({
               size="sm"
               onClick={handleSend}
               disabled={!content.trim() || disabled}
-              className="h-8 w-8 rounded-xl p-0 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-all shadow-xs"
+              className="h-8 w-8 rounded-full p-0 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-all shadow-xs"
               aria-label="Send message"
             >
               {disabled ? (

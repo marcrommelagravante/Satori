@@ -3,31 +3,53 @@
 import * as React from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Sparkles, ArrowRight, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
-function GithubIcon({ className }: { className?: string }) {
+function GoogleIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <svg className={className} viewBox="0 0 24 24">
       <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+        fill="#4285F4"
+        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"
       />
+      <path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98Z"
+      />
+    </svg>
+  );
+}
+
+function MicrosoftIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <path fill="#F25022" d="M1 1h10v10H1z" />
+      <path fill="#00A4EF" d="M1 13h10v10H1z" />
+      <path fill="#7FBA00" d="M13 1h10v10H13z" />
+      <path fill="#FFB900" d="M13 13h10v10H13z" />
     </svg>
   );
 }
 
 export function LoginForm({ hasGithub }: { hasGithub: boolean }) {
   const router = useRouter();
-  const [email, setEmail] = React.useState("demo@satori.local");
-  const [name, setName] = React.useState("Alex Rivera");
+  const [email, setEmail] = React.useState("you@company.com");
+  const [password, setPassword] = React.useState("••••••••");
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [rememberMe, setRememberMe] = React.useState(true);
   const [isLoading, setIsLoading] = React.useState(false);
-  const [isGithubLoading, setIsGithubLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  async function handleCredentialsLogin(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email) return;
 
@@ -36,13 +58,13 @@ export function LoginForm({ hasGithub }: { hasGithub: boolean }) {
 
     try {
       const res = await signIn("credentials", {
-        email,
-        name,
+        email: email.trim().toLowerCase(),
+        name: email.split("@")[0] || "User",
         redirect: false,
       });
 
       if (res?.error) {
-        setError("Unable to sign in. Please try again.");
+        setError("Unable to sign in. Please verify your credentials.");
         setIsLoading(false);
       } else {
         router.push("/dashboard");
@@ -54,100 +76,127 @@ export function LoginForm({ hasGithub }: { hasGithub: boolean }) {
     }
   }
 
-  async function handleGithubLogin() {
-    setIsGithubLoading(true);
-    try {
-      await signIn("github", { callbackUrl: "/dashboard" });
-    } catch {
-      setIsGithubLoading(false);
-    }
-  }
-
   return (
-    <div className="w-full space-y-5">
+    <div className="w-full space-y-4">
       {error && (
-        <div className="rounded-lg bg-error/10 border border-error/20 p-3 text-xs text-error font-medium">
+        <div className="rounded-[8px] bg-error/10 border border-error/20 p-2.5 text-xs text-error font-medium text-center">
           {error}
         </div>
       )}
 
-      {hasGithub && (
-        <>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full justify-center gap-2 h-10 font-medium"
-            onClick={handleGithubLogin}
-            disabled={isGithubLoading || isLoading}
-          >
-            {isGithubLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <GithubIcon className="h-4 w-4" />
-            )}
-            Continue with GitHub
-          </Button>
-
-          <div className="relative flex items-center justify-center">
-            <div className="w-full border-t border-border" />
-            <span className="absolute bg-card px-2 text-xs text-muted-foreground uppercase">
-              Or continue with demo
-            </span>
-          </div>
-        </>
-      )}
-
-      <form onSubmit={handleCredentialsLogin} className="space-y-3.5">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Email Field */}
         <div className="space-y-1.5 text-left">
-          <label className="text-xs font-semibold text-muted-foreground">
-            Display Name
+          <label className="text-xs font-semibold text-foreground">
+            Email address
           </label>
-          <Input
-            type="text"
-            placeholder="Alex Rivera"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={isLoading}
-            required
-          />
-        </div>
-
-        <div className="space-y-1.5 text-left">
-          <label className="text-xs font-semibold text-muted-foreground">
-            Email Address
-          </label>
-          <Input
+          <input
             type="email"
-            placeholder="demo@satori.local"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            disabled={isLoading}
             required
+            placeholder="you@company.com"
+            className="w-full h-10 px-3 rounded-[8px] border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
           />
         </div>
 
+        {/* Password Field */}
+        <div className="space-y-1.5 text-left">
+          <label className="text-xs font-semibold text-foreground">
+            Password
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="Enter your password"
+              className="w-full h-10 pl-3 pr-10 rounded-[8px] border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Remember me & Forgot password */}
+        <div className="flex items-center justify-between text-xs">
+          <label className="flex items-center gap-2 cursor-pointer text-muted-foreground select-none">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5"
+            />
+            <span>Remember me</span>
+          </label>
+
+          <a href="#" className="text-primary hover:underline font-medium">
+            Forgot password?
+          </a>
+        </div>
+
+        {/* Sign In Button */}
         <Button
           type="submit"
-          className="w-full justify-center gap-2 h-10 mt-1 font-semibold"
           disabled={isLoading}
+          className="w-full h-10 rounded-[8px] bg-primary hover:bg-primary-dark text-primary-foreground font-semibold text-xs shadow-xs transition-all"
         >
           {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <>
-              Sign In to Satori
-              <ArrowRight className="h-4 w-4" />
-            </>
-          )}
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : null}
+          <span>Sign In</span>
         </Button>
       </form>
 
-      <div className="rounded-lg bg-secondary/10 border border-secondary/20 p-3 text-xs text-left text-secondary flex items-start gap-2">
-        <Sparkles className="h-4 w-4 shrink-0 mt-0.5 text-secondary" />
-        <span>
-          <strong>Fast Demo Mode:</strong> Instant sign-in generates a dedicated workspace and PostgreSQL user record automatically.
+      {/* Divider */}
+      <div className="relative flex items-center justify-center my-4">
+        <div className="w-full border-t border-border" />
+        <span className="absolute bg-card px-2 text-[11px] text-muted-foreground">
+          or continue with
         </span>
       </div>
+
+      {/* Social Logins matching Mockup Panel 6 */}
+      <div className="grid grid-cols-2 gap-2.5">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            setEmail("google.user@satori.local");
+          }}
+          className="h-9 rounded-[8px] border-border text-xs font-medium flex items-center justify-center gap-2 hover:bg-muted/60"
+        >
+          <GoogleIcon className="h-4 w-4" />
+          <span>Google</span>
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            setEmail("microsoft.user@satori.local");
+          }}
+          className="h-9 rounded-[8px] border-border text-xs font-medium flex items-center justify-center gap-2 hover:bg-muted/60"
+        >
+          <MicrosoftIcon className="h-4 w-4" />
+          <span>Microsoft</span>
+        </Button>
+      </div>
+
+      {/* Footer */}
+      <p className="text-center text-[11px] text-muted-foreground pt-3">
+        Don&apos;t have an account?{" "}
+        <a href="mailto:admin@satori.local" className="text-primary hover:underline font-medium">
+          Contact your administrator
+        </a>
+      </p>
     </div>
   );
 }

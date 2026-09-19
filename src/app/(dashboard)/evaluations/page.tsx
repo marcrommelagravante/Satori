@@ -7,7 +7,7 @@ import {
   getEvalRunDetails,
 } from "@/lib/evaluations";
 import { getWorkspaceTelemetry } from "@/lib/observability";
-import { EvaluationsDashboard } from "@/components/evaluations/evaluations-dashboard";
+import { RAGPlaygroundView } from "@/components/evaluations/rag-playground-view";
 import { redirect } from "next/navigation";
 
 export default async function EvaluationsPage({
@@ -39,7 +39,7 @@ export default async function EvaluationsPage({
       : null;
 
   return (
-    <EvaluationsDashboard
+    <RAGPlaygroundView
       workspaceId={activeWorkspace.id}
       initialRuns={runs}
       initialBaseline={baseline}

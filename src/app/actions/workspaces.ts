@@ -3,6 +3,7 @@
 import { requireAuth } from "@/lib/auth/session";
 import { createWorkspace } from "@/lib/workspaces/service";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const createWorkspaceSchema = z.object({
@@ -32,6 +33,7 @@ export async function createWorkspaceAction(formData: FormData): Promise<void> {
     validated.data.slug
   );
 
+  revalidatePath("/", "layout");
   redirect(`/dashboard?ws=${workspace.id}`);
 }
 
@@ -57,6 +59,7 @@ export async function deleteWorkspaceAction(workspaceId: string): Promise<{ succ
       resourceId: workspaceId,
     });
 
+    revalidatePath("/", "layout");
     return { success: true };
   } catch (err) {
     return {

@@ -268,28 +268,31 @@ export function ChatContainer({
 
       {/* 2. Center Panel: Active Chat Thread + Composer */}
       <main className="flex-1 flex flex-col h-full min-w-0 bg-background/50">
-        {/* Chat Header */}
-        <div className="h-14 px-4 sm:px-6 border-b border-border bg-card flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <MessageSquare className="h-4 w-4 text-primary shrink-0" />
-            <span className="font-semibold text-xs sm:text-sm text-foreground truncate">
-              {conversations.find((c) => c.id === activeConversationId)?.title ||
-                "New Conversation"}
-            </span>
-            <Badge variant="ai" className="text-[10px] hidden sm:inline-flex">
-              Grounded RAG
-            </Badge>
+        {/* Chat Header matching Panel 4 */}
+        <div className="h-16 px-4 sm:px-6 border-b border-border/70 bg-card flex items-center justify-between shrink-0">
+          <div className="flex flex-col min-w-0">
+            <h1 className="font-heading text-sm sm:text-base font-bold text-foreground truncate">
+              AI Chat
+            </h1>
+            <p className="text-[11px] text-muted-foreground truncate hidden sm:block">
+              Ask questions, get insights, and explore your knowledge
+            </p>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-3">
+            {/* Model Selector Dropdown */}
+            <div className="flex items-center gap-1.5 rounded-[8px] border border-border/80 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground shadow-2xs">
+              <Sparkles className="h-3.5 w-3.5 text-secondary" />
+              <span>Gemini 2.0 Flash</span>
+            </div>
+
             {activeCitations.length > 0 && !isCitationPanelOpen && (
               <button
                 type="button"
                 onClick={() => setIsCitationPanelOpen(true)}
-                className="text-xs text-secondary hover:underline flex items-center gap-1 font-medium"
+                className="text-xs text-secondary hover:underline flex items-center gap-1 font-medium bg-secondary/10 px-2 py-1 rounded-[6px]"
               >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>View Sources ({activeCitations.length})</span>
+                <span>Sources ({activeCitations.length})</span>
               </button>
             )}
           </div>
