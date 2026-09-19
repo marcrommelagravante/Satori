@@ -133,7 +133,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto" data-density="high">
+    <div className="space-y-6 w-full" data-density="high">
       {/* Greeting Header (without icon) */}
       <div>
         <h1 className="font-heading text-2xl md:text-[28px] font-bold tracking-tight text-slate-900 dark:text-foreground">

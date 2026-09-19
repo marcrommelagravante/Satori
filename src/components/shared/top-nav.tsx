@@ -4,7 +4,7 @@ import * as React from "react";
 import { Search, User as UserIcon, LogOut, ChevronDown, Bell } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { signOut } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
 interface TopNavProps {
   user: {
@@ -18,6 +18,7 @@ interface TopNavProps {
 }
 
 export function TopNav({ user, workspaceRole }: TopNavProps) {
+  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
   const profileMenuRef = React.useRef<HTMLDivElement>(null);
@@ -37,6 +38,11 @@ export function TopNav({ user, workspaceRole }: TopNavProps) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Only display the TopNav header controls on the dashboard page
+  if (pathname !== "/dashboard") {
+    return null;
+  }
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();

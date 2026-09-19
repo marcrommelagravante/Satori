@@ -25,14 +25,14 @@ export function DocumentsView({
   );
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto" data-density="medium">
-      {/* Header matching Mockup Panel 2 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+    <div className="space-y-6 w-full" data-density="medium">
+      {/* Header matching Image 1 */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
-          <h1 className="font-heading text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+          <h1 className="font-heading text-2xl md:text-[28px] font-bold tracking-tight text-slate-900 dark:text-foreground">
             Documents
           </h1>
-          <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+          <p className="text-xs md:text-sm text-slate-500 dark:text-muted-foreground mt-1">
             Upload, manage, and organize your documents.
           </p>
         </div>
@@ -40,7 +40,7 @@ export function DocumentsView({
         <div>
           <Button
             onClick={() => setIsUploadOpen(true)}
-            className="rounded-[8px] bg-primary hover:bg-primary-dark text-primary-foreground font-semibold text-xs md:text-sm px-4 py-2 shadow-xs flex items-center gap-2"
+            className="rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white font-semibold text-xs md:text-sm px-4.5 py-2.5 shadow-xs flex items-center gap-2 transition-all cursor-pointer"
           >
             <Upload className="h-4 w-4" />
             <span>Upload Documents</span>

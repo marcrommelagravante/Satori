@@ -56,7 +56,47 @@ export default async function KnowledgePage({ searchParams }: KnowledgePageProps
     );
   const readyDocs = Number(docStats?.totalDocs || 0);
 
-  // 3. Fetch recent chunks for the inspector
+  // 3. Fetch real workspace documents to compute live category counts
+  const workspaceDocs = await db
+    .select({
+      id: documents.id,
+      name: documents.name,
+      category: documents.category,
+    })
+    .from(documents)
+    .where(eq(documents.workspaceId, activeWorkspace.id));
+
+  const categoryCounts = {
+    policies: 0,
+    technical: 0,
+    reports: 0,
+    general: 0,
+  };
+
+  for (const doc of workspaceDocs) {
+    const baseName = doc.name.replace(/\.[^/.]+$/, "");
+    const cat = (doc.category || "").toLowerCase();
+    const name = baseName.toLowerCase();
+    const textToMatch = `${cat} ${name}`;
+
+    if (
+      /\b(policy|policies|procedure|procedures|handbook|guideline|guidelines|bylaws|compliance|hr)\b/i.test(textToMatch)
+    ) {
+      categoryCounts.policies++;
+    } else if (
+      /\b(tech|technical|doc|docs|documentation|spec|specs|api|architecture|engineering|code|developer)\b/i.test(textToMatch)
+    ) {
+      categoryCounts.technical++;
+    } else if (
+      /\b(report|reports|financial|finance|analytics|analysis|metric|metrics|quarter|quarterly|q1|q2|q3|q4)\b/i.test(textToMatch)
+    ) {
+      categoryCounts.reports++;
+    } else {
+      categoryCounts.general++;
+    }
+  }
+
+  // 4. Fetch recent chunks for the inspector
   const recentChunksRaw = await db
     .select({
       id: documentChunks.id,
@@ -92,6 +132,7 @@ export default async function KnowledgePage({ searchParams }: KnowledgePageProps
       ftsChunks={ftsChunks}
       unindexedCount={unindexedCount}
       readyDocs={readyDocs}
+      categoryCounts={categoryCounts}
       inspectChunks={inspectChunks}
       initialQuery={params.q || ""}
     />
