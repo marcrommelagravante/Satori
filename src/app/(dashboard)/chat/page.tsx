@@ -35,7 +35,7 @@ export default async function ChatPage({
     : [];
 
   return (
-    <div className="h-[calc(100vh-5.5rem)] flex flex-col -m-6 p-6">
+    <div className="w-full h-[calc(100vh-3rem)] md:h-[calc(100vh-4rem)] flex flex-col space-y-4">
       <ChatContainer
         workspaceId={activeWorkspace.id}
         workspaceName={activeWorkspace.name}

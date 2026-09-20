@@ -1,22 +1,20 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
-import { Button } from "@/components/ui/button";
-import { ArrowUp, Sparkles, Loader2, Bot } from "lucide-react";
+import { ArrowRight, Loader2, Paperclip } from "lucide-react";
 
 interface MessageComposerProps {
   onSend: (content: string, agentMode?: boolean) => void;
   disabled?: boolean;
   placeholder?: string;
-  defaultAgentMode?: boolean;
+  agentMode?: boolean;
 }
 
 export function MessageComposer({
   onSend,
   disabled = false,
   placeholder = "Ask a question...",
-  defaultAgentMode = false,
+  agentMode = false,
 }: MessageComposerProps) {
   const [content, setContent] = useState("");
-  const [agentMode, setAgentMode] = useState(defaultAgentMode);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea height as user types
@@ -25,7 +23,7 @@ export function MessageComposer({
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${Math.min(
         textareaRef.current.scrollHeight,
-        180
+        140
       )}px`;
     }
   }, [content]);
@@ -48,14 +46,25 @@ export function MessageComposer({
   };
 
   return (
-    <div className="p-4 border-t border-border bg-card/80 backdrop-blur-xs">
+    <div className="p-4 sm:p-6 pt-2 shrink-0 bg-transparent">
       <div
-        className={`relative rounded-2xl border bg-background focus-within:ring-2 transition-all shadow-xs ${
+        className={`relative flex items-center rounded-full border bg-white dark:bg-card py-1.5 pl-4 pr-1.5 shadow-xs transition-all ${
           agentMode
-            ? "border-primary/60 focus-within:border-primary focus-within:ring-primary/25 ring-1 ring-primary/20"
-            : "border-border focus-within:border-primary/50 focus-within:ring-primary/20"
+            ? "border-[#7C3AED]/70 focus-within:border-[#7C3AED] focus-within:ring-2 focus-within:ring-[#7C3AED]/15 ring-1 ring-[#7C3AED]/20"
+            : "border-slate-200/90 dark:border-border/80 focus-within:border-[#4F46E5] focus-within:ring-2 focus-within:ring-[#4F46E5]/15"
         }`}
       >
+        {/* Attachment Paperclip Icon */}
+        <button
+          type="button"
+          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded-full shrink-0 cursor-pointer"
+          title="Attach document or reference (coming soon)"
+          aria-label="Attach file"
+        >
+          <Paperclip className="h-4.5 w-4.5" />
+        </button>
+
+        {/* Input Textarea */}
         <textarea
           ref={textareaRef}
           value={content}
@@ -63,70 +72,37 @@ export function MessageComposer({
           onKeyDown={handleKeyDown}
           placeholder={
             agentMode
-              ? "Agent Mode active — ask to compare documents, summarize, or create reports..."
+              ? "Ask agent to analyze, compare documents, or synthesize..."
               : placeholder
           }
           disabled={disabled}
           rows={1}
           maxLength={2000}
-          className="w-full resize-none bg-transparent px-4 pt-3.5 pb-12 text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden disabled:opacity-50 min-h-[52px] max-h-[180px]"
+          className="flex-1 bg-transparent px-2.5 py-1 text-xs sm:text-sm text-slate-900 dark:text-foreground placeholder:text-slate-400 focus:outline-none resize-none max-h-32 min-h-[36px] leading-relaxed disabled:opacity-50"
         />
 
-        <div className="absolute bottom-2.5 left-4 right-2.5 flex items-center justify-between pointer-events-none">
-          <div className="flex items-center gap-2 pointer-events-auto">
-            <button
-              type="button"
-              onClick={() => setAgentMode(!agentMode)}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                agentMode
-                  ? "bg-primary text-primary-foreground shadow-xs ring-1 ring-primary/40"
-                  : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
-              }`}
-              title={
-                agentMode
-                  ? "Agent Mode: Autonomous multi-step tool reasoning enabled"
-                  : "Click to enable Agent Mode"
-              }
-            >
-              <Bot className="h-3.5 w-3.5" />
-              <span>Agent Mode</span>
-              {agentMode && (
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              )}
-            </button>
+        {/* Character count when close to limit */}
+        {content.length > 1500 && (
+          <span className="text-[10px] text-slate-400 font-mono pr-2 shrink-0">
+            {content.length}/2000
+          </span>
+        )}
 
-            <div className="hidden sm:flex items-center gap-1 text-[11px] text-muted-foreground">
-              <Sparkles className="h-3 w-3 text-secondary" />
-              <span>{agentMode ? "Multi-tool reasoning" : "Grounded RAG"}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 pointer-events-auto">
-            {content.length > 1500 && (
-              <span className="text-[10px] text-muted-foreground font-mono">
-                {content.length}/2000
-              </span>
-            )}
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleSend}
-              disabled={!content.trim() || disabled}
-              className="h-8 w-8 rounded-full p-0 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 transition-all shadow-xs"
-              aria-label="Send message"
-            >
-              {disabled ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <ArrowUp className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-        </div>
+        {/* Circular Send Button matching Image 1 */}
+        <button
+          type="button"
+          onClick={handleSend}
+          disabled={!content.trim() || disabled}
+          className="h-9 w-9 rounded-full bg-[#4F46E5] hover:bg-[#4338CA] text-white flex items-center justify-center transition-all shadow-xs shrink-0 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+          aria-label="Send message"
+        >
+          {disabled ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ArrowRight className="h-4.5 w-4.5" />
+          )}
+        </button>
       </div>
-      <p className="mt-2 text-[11px] text-center text-muted-foreground">
-        Press <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded border border-border">Enter</kbd> to send, <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded border border-border">Shift + Enter</kbd> for a new line
-      </p>
     </div>
   );
 }

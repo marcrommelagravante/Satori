@@ -29,9 +29,17 @@ export function CitationPanel({
     : null;
 
   return (
-    <aside className="w-80 sm:w-96 border-l border-border bg-card flex flex-col h-full shrink-0 shadow-sm transition-all duration-200">
-      {/* Header */}
-      <div className="p-4 border-b border-border flex items-center justify-between bg-muted/20">
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-slate-900/30 dark:bg-black/60 backdrop-blur-xs z-40 transition-opacity animate-in fade-in duration-200"
+        onClick={onClose}
+      />
+
+      {/* Slide-over Drawer Panel */}
+      <aside className="fixed top-0 bottom-0 right-0 w-96 max-w-[88vw] bg-white dark:bg-card border-l border-slate-200/80 dark:border-border/80 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-200">
+        {/* Header */}
+        <div className="p-4 border-b border-slate-200/80 dark:border-border/80 flex items-center justify-between bg-slate-50/50 dark:bg-muted/10">
         <div className="flex items-center gap-2">
           <div className="h-7 w-7 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center">
             <BookOpen className="h-4 w-4" />
@@ -167,5 +175,6 @@ export function CitationPanel({
         </div>
       )}
     </aside>
-  );
+  </>
+);
 }

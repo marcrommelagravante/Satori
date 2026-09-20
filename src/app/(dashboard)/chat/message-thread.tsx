@@ -106,35 +106,61 @@ export function MessageThread({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-      {/* Empty State matching Mockup Panel 4 */}
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 flex flex-col">
+      {/* Empty State matching Image 1 */}
       {messages.length === 0 && (
-        <div className="max-w-md mx-auto my-auto py-12 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-secondary/15 text-secondary shadow-2xs mb-4">
-            <Sparkles className="h-6 w-6" />
+        <div className="max-w-2xl mx-auto my-auto py-8 sm:py-12 text-center flex flex-col items-center">
+          {/* Squircle Badge */}
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EEF2FF] dark:bg-violet-950/50 text-[#7C3AED] dark:text-violet-400 border border-violet-100 dark:border-violet-900/40 shadow-xs mb-4 ring-1 ring-violet-500/10">
+            <Sparkles className="h-7 w-7" />
           </div>
 
-          <h3 className="font-heading text-lg font-bold text-foreground mb-1.5">
+          <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-foreground mb-2">
             How can I help you today?
-          </h3>
-          <p className="text-xs text-muted-foreground max-w-xs mx-auto mb-6 leading-relaxed">
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-muted-foreground max-w-md mx-auto mb-7 leading-relaxed">
             I can search your documents, answer questions, summarize information, and more.
           </p>
 
-          <div className="flex flex-col gap-2 max-w-sm mx-auto">
-            {[
-              "Summarize the key points in the latest report",
-              "What are the company's HR policies?",
-              "Find information about the product roadmap",
-            ].map((q, idx) => (
+          {/* Suggestion Chips in 2 Centered Rows (matching Image 1) */}
+          <div className="flex flex-col items-center gap-2.5 w-full">
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
               <button
-                key={idx}
-                onClick={() => onSuggestedQuestionClick(q)}
-                className="px-4 py-2.5 text-center rounded-full border border-border/80 bg-card hover:border-primary/50 hover:bg-muted/40 text-xs text-foreground font-medium transition-all shadow-2xs cursor-pointer"
+                type="button"
+                onClick={() =>
+                  onSuggestedQuestionClick(
+                    "Summarize the key points in the latest report"
+                  )
+                }
+                className="px-4 py-2 text-center rounded-full border border-slate-200/90 dark:border-border/80 bg-white dark:bg-card hover:border-[#4F46E5]/40 hover:bg-slate-50/80 dark:hover:bg-muted/40 text-xs text-slate-700 dark:text-slate-300 font-medium transition-all shadow-2xs cursor-pointer"
               >
-                {q}
+                Summarize the key points in the latest report
               </button>
-            ))}
+
+              <button
+                type="button"
+                onClick={() =>
+                  onSuggestedQuestionClick("What are the company's HR policies?")
+                }
+                className="px-4 py-2 text-center rounded-full border border-slate-200/90 dark:border-border/80 bg-white dark:bg-card hover:border-[#4F46E5]/40 hover:bg-slate-50/80 dark:hover:bg-muted/40 text-xs text-slate-700 dark:text-slate-300 font-medium transition-all shadow-2xs cursor-pointer"
+              >
+                What are the company&apos;s HR policies?
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              <button
+                type="button"
+                onClick={() =>
+                  onSuggestedQuestionClick(
+                    "Find information about the product roadmap"
+                  )
+                }
+                className="px-4 py-2 text-center rounded-full border border-slate-200/90 dark:border-border/80 bg-white dark:bg-card hover:border-[#4F46E5]/40 hover:bg-slate-50/80 dark:hover:bg-muted/40 text-xs text-slate-700 dark:text-slate-300 font-medium transition-all shadow-2xs cursor-pointer"
+              >
+                Find information about the product roadmap
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -154,8 +180,8 @@ export function MessageThread({
             <div
               className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-semibold shadow-2xs ${
                 isUser
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground"
+                  ? "bg-[#4F46E5] text-white"
+                  : "bg-[#EEF2FF] dark:bg-violet-950/50 text-[#7C3AED] dark:text-violet-400 border border-violet-100 dark:border-violet-900/40"
               }`}
             >
               {isUser ? (
@@ -167,10 +193,10 @@ export function MessageThread({
 
             {/* Bubble Content */}
             <div
-              className={`max-w-2xl rounded-2xl p-4 text-sm space-y-2 shadow-2xs transition-all ${
+              className={`max-w-2xl rounded-2xl p-4 text-xs sm:text-sm space-y-2 shadow-2xs transition-all ${
                 isUser
-                  ? "bg-primary text-primary-foreground rounded-tr-xs"
-                  : "bg-card border border-border text-foreground rounded-tl-xs"
+                  ? "bg-[#4F46E5] text-white rounded-tr-xs"
+                  : "bg-white dark:bg-card border border-slate-200/80 dark:border-border/80 text-slate-900 dark:text-foreground rounded-tl-xs"
               }`}
             >
               {/* Header for Assistant */}
