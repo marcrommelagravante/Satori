@@ -8,6 +8,7 @@ import {
   Network,
   Sparkles,
   FileBarChart,
+  FlaskConical,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
   { name: "Knowledge Hub", href: "/knowledge", icon: Network },
   { name: "AI Chat", href: "/chat", icon: Sparkles },
   { name: "Reports", href: "/reports", icon: FileBarChart },
+  { name: "Evaluations", href: "/evaluations", icon: FlaskConical },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

@@ -114,28 +114,31 @@ export function EvaluationsDashboard({
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 dark:border-border pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold tracking-tight">Evaluations & Observability</h1>
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-              Phase 7
-            </Badge>
+            <h2 className="font-heading text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-foreground">
+              Evaluations & Observability Suite
+            </h2>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs md:text-sm text-slate-500 dark:text-muted-foreground">
             Measure retrieval accuracy (Recall@K), answer correctness, citation validity, and real-time AI operational telemetry.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <Button
             variant="outline"
             size="sm"
             onClick={refreshAll}
             disabled={isRefreshing}
-            className="text-xs"
+            className="rounded-xl border border-slate-200/80 dark:border-border text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-muted text-xs cursor-pointer"
           >
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-3.5 w-3.5 mr-1.5 ${
+                isRefreshing ? "animate-spin text-[#4F46E5]" : ""
+              }`}
+            />
             Refresh
           </Button>
 
@@ -143,7 +146,7 @@ export function EvaluationsDashboard({
             size="sm"
             onClick={handleRunBenchmark}
             disabled={isRunningBenchmark}
-            className="text-xs shadow-sm bg-primary text-primary-foreground hover:bg-primary/90"
+            className="rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white text-xs font-semibold shadow-xs cursor-pointer disabled:opacity-50"
           >
             {isRunningBenchmark ? (
               <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -156,29 +159,29 @@ export function EvaluationsDashboard({
       </div>
 
       {/* Tab Switcher */}
-      <div className="flex items-center gap-2 border-b border-border">
+      <div className="flex items-center gap-2 border-b border-slate-200/80 dark:border-border">
         <button
           onClick={() => setActiveTab("benchmarks")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === "benchmarks"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
+              ? "border-[#4F46E5] text-[#4F46E5] dark:text-indigo-400"
+              : "border-transparent text-slate-500 dark:text-muted-foreground hover:text-slate-900 dark:hover:text-foreground"
           }`}
         >
           <Gauge className="h-4 w-4" />
-          Quality Evaluations & Benchmarks
+          <span>Quality Evaluations & Benchmarks</span>
         </button>
 
         <button
           onClick={() => setActiveTab("observability")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === "observability"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
+              ? "border-[#4F46E5] text-[#4F46E5] dark:text-indigo-400"
+              : "border-transparent text-slate-500 dark:text-muted-foreground hover:text-slate-900 dark:hover:text-foreground"
           }`}
         >
           <Activity className="h-4 w-4" />
-          System Observability & Telemetry
+          <span>System Observability & Telemetry</span>
         </button>
       </div>
 

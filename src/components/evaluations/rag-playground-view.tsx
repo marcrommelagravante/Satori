@@ -7,10 +7,11 @@ import {
   FileText,
   Search,
   Scale,
-  ArrowRight,
   Play,
+  Activity,
+  Gauge,
+  Zap,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { EvaluationsDashboard } from "./evaluations-dashboard";
 import type { EvalCase, EvalRun } from "@/lib/db/schema";
 import type { EvalRunDetailResult } from "@/lib/evaluations";
@@ -42,134 +43,136 @@ export function RAGPlaygroundView({
       title: "Summarize Documents",
       description: "Get a summary from your files",
       icon: FileText,
-      iconColor: "text-blue-500",
-      iconBg: "bg-blue-50 dark:bg-blue-950/40",
+      iconColor: "text-blue-600 dark:text-blue-400",
+      iconBg: "bg-blue-50 dark:bg-blue-950/40 border border-blue-200/50 dark:border-blue-800/30",
       query: "Please summarize our workspace documents and highlight key policies.",
     },
     {
       title: "Ask Questions",
       description: "Find specific information",
       icon: Search,
-      iconColor: "text-violet-500",
-      iconBg: "bg-violet-50 dark:bg-violet-950/40",
+      iconColor: "text-violet-600 dark:text-violet-400",
+      iconBg: "bg-violet-50 dark:bg-violet-950/40 border border-violet-200/50 dark:border-violet-800/30",
       query: "What are the rules and guidelines defined across our documents?",
     },
     {
       title: "Compare Documents",
       description: "See differences and similarities",
       icon: Scale,
-      iconColor: "text-emerald-500",
-      iconBg: "bg-emerald-50 dark:bg-emerald-950/40",
+      iconColor: "text-indigo-600 dark:text-indigo-400",
+      iconBg: "bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/50 dark:border-indigo-800/30",
       query: "Compare the differences and overlap across our uploaded files.",
     },
   ];
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12">
-      {/* Hero Banner matching Mockup Panel 7 */}
-      <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-card via-background to-secondary/5 p-6 sm:p-8 shadow-xs">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-          <div className="md:col-span-2 space-y-3">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-secondary/15 px-3 py-1 text-xs font-semibold text-secondary">
-              <Sparkles className="h-3 w-3" />
-              <span>Phase 7 — RAG Playground</span>
-            </div>
+    <div className="space-y-6 md:space-y-8 w-full pb-12" data-density="medium">
+      {/* 1. Top Header with Segmented Tab Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
+        <div>
+          <h1 className="font-heading text-2xl md:text-[28px] font-bold tracking-tight text-slate-900 dark:text-foreground">
+            Evaluations
+          </h1>
+          <p className="text-xs md:text-sm text-slate-500 dark:text-muted-foreground mt-0.5">
+            Test and experiment with your knowledge base using Retrieval-Augmented Generation.
+          </p>
+        </div>
 
-            <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">
-              RAG Playground
-            </h1>
-
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-lg">
-              Test and experiment with your knowledge base using Retrieval-Augmented Generation.
-              Run semantic searches, inspect chunk fusion, and benchmark answer quality.
-            </p>
-
-            <div className="pt-2 flex flex-wrap items-center gap-3">
-              <Button asChild className="rounded-[8px] bg-primary hover:bg-primary-dark text-primary-foreground font-semibold px-4 py-2 shadow-xs">
-                <Link href={`/chat?ws=${workspaceId}&mode=playground`}>
-                  <Play className="h-4 w-4 mr-2" />
-                  <span>Start New Session</span>
-                </Link>
-              </Button>
-
-              <div className="flex items-center rounded-[8px] border border-border bg-card p-1 shadow-2xs">
-                <button
-                  onClick={() => setActiveTab("playground")}
-                  className={`px-3 py-1 rounded-[6px] text-xs font-medium transition-colors ${
-                    activeTab === "playground"
-                      ? "bg-primary text-primary-foreground font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Playground Overview
-                </button>
-                <button
-                  onClick={() => setActiveTab("benchmarks")}
-                  className={`px-3 py-1 rounded-[6px] text-xs font-medium transition-colors ${
-                    activeTab === "benchmarks"
-                      ? "bg-primary text-primary-foreground font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Evaluation Suite & Telemetry
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 3D-styled floating doc card illustration */}
-          <div className="hidden md:flex justify-center items-center relative">
-            <div className="relative w-44 h-44 rounded-2xl bg-gradient-to-tr from-primary/20 to-secondary/20 border border-secondary/30 flex items-center justify-center p-4 shadow-xl">
-              <div className="w-28 h-36 bg-card border border-border/80 rounded-xl shadow-lg p-3 space-y-2 transform -rotate-6">
-                <div className="h-2 w-12 bg-primary/40 rounded-full" />
-                <div className="h-2 w-20 bg-muted rounded-full" />
-                <div className="h-2 w-16 bg-muted rounded-full" />
-                <div className="h-2 w-14 bg-secondary/40 rounded-full mt-4" />
-              </div>
-              <div className="absolute w-28 h-36 bg-primary/10 border border-primary/30 rounded-xl shadow-md p-3 space-y-2 transform rotate-6 translate-x-3 translate-y-2 backdrop-blur-xs">
-                <div className="h-2 w-10 bg-secondary/50 rounded-full" />
-                <div className="h-2 w-16 bg-muted rounded-full" />
-                <div className="h-2 w-12 bg-muted rounded-full" />
-              </div>
-            </div>
-          </div>
+        {/* Tab Switcher */}
+        <div className="flex items-center p-1 rounded-2xl bg-white dark:bg-card border border-slate-200/80 dark:border-border shadow-2xs self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setActiveTab("playground")}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === "playground"
+                ? "bg-[#4F46E5] text-white shadow-xs"
+                : "text-slate-600 dark:text-muted-foreground hover:text-slate-900 dark:hover:text-foreground"
+            }`}
+          >
+            Playground Overview
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("benchmarks")}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === "benchmarks"
+                ? "bg-[#4F46E5] text-white shadow-xs"
+                : "text-slate-600 dark:text-muted-foreground hover:text-slate-900 dark:hover:text-foreground"
+            }`}
+          >
+            Evaluation Benchmarks
+          </button>
         </div>
       </div>
 
       {activeTab === "playground" ? (
-        <div className="space-y-6">
-          {/* Quick Examples Section matching Mockup Panel 7 */}
-          <div className="space-y-3">
-            <h2 className="font-heading text-sm font-semibold text-foreground">
-              Quick Examples
-            </h2>
+        <div className="space-y-6 md:space-y-8">
+          {/* 2. Hero Banner (Replica of User Mockup) */}
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-indigo-100/80 dark:border-indigo-950/50 bg-gradient-to-br from-white via-[#F8FAFC] to-[#EEF2FF]/70 dark:from-card dark:via-card dark:to-indigo-950/20 p-6 sm:p-8 md:p-10 shadow-xs">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+              <div className="md:col-span-7 lg:col-span-8 space-y-3.5">
+                <h2 className="font-heading text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-foreground">
+                  RAG Playground
+                </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <p className="text-xs sm:text-sm md:text-base text-slate-500 dark:text-muted-foreground leading-relaxed max-w-xl">
+                  Test and experiment with your knowledge base using Retrieval-Augmented Generation.
+                </p>
+
+                <div className="pt-2">
+                  <Link
+                    href={`/chat?ws=${workspaceId}&mode=playground`}
+                    className="inline-flex items-center gap-2.5 rounded-xl sm:rounded-2xl bg-[#4F46E5] hover:bg-[#4338CA] text-white font-semibold text-xs sm:text-sm px-6 py-3 shadow-xs transition-all cursor-pointer group"
+                  >
+                    <Play className="h-4 w-4 fill-white" />
+                    <span>Start New Session</span>
+                  </Link>
+                </div>
+              </div>
+
+              {/* 3D Illustration matching user mockup */}
+              <div className="md:col-span-5 lg:col-span-4 flex justify-center md:justify-end items-center">
+                <div className="relative w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-indigo-300/30 to-purple-300/30 rounded-full blur-2xl transform scale-90" />
+                  <img
+                    src="/illustrations/rag-playground-hero.jpg"
+                    alt="RAG Playground 3D Document Illustration"
+                    className="relative z-10 w-full h-full object-contain rounded-2xl drop-shadow-xl select-none pointer-events-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Quick Examples Section (Replica of User Mockup) */}
+          <div className="space-y-3">
+            <h3 className="font-heading text-sm md:text-base font-bold text-slate-900 dark:text-foreground">
+              Quick Examples
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {quickExamples.map((ex, i) => {
                 const Icon = ex.icon;
                 return (
                   <Link
                     key={i}
-                    href={`/chat?ws=${workspaceId}&q=${encodeURIComponent(ex.query)}`}
-                    className="rounded-[10px] border border-border/80 bg-card p-4 shadow-2xs hover:border-primary/50 transition-all flex flex-col justify-between group"
+                    href={`/chat?ws=${workspaceId}&q=${encodeURIComponent(
+                      ex.query
+                    )}`}
+                    className="rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card p-4 sm:p-5 shadow-xs hover:border-[#4F46E5]/40 hover:shadow-sm transition-all flex items-center gap-4 group cursor-pointer"
                   >
-                    <div>
-                      <div
-                        className={`flex h-9 w-9 items-center justify-center rounded-[8px] mb-3 ${ex.iconBg} ${ex.iconColor} transition-transform group-hover:scale-105`}
-                      >
-                        <Icon className="h-4.5 w-4.5" />
-                      </div>
-                      <h3 className="font-heading text-xs font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
+                    <div
+                      className={`flex h-12 w-12 items-center justify-center rounded-2xl shrink-0 ${ex.iconBg} ${ex.iconColor} transition-transform group-hover:scale-105`}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-heading text-xs sm:text-sm font-bold text-slate-900 dark:text-foreground group-hover:text-[#4F46E5] dark:group-hover:text-indigo-400 transition-colors truncate">
                         {ex.title}
-                      </h3>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      </h4>
+                      <p className="text-[11px] sm:text-xs text-slate-500 dark:text-muted-foreground mt-0.5 leading-snug truncate">
                         {ex.description}
                       </p>
-                    </div>
-
-                    <div className="mt-4 pt-2.5 border-t border-border/40 flex items-center justify-between text-xs text-primary font-medium">
-                      <span>Try example</span>
-                      <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </Link>
                 );
@@ -177,30 +180,63 @@ export function RAGPlaygroundView({
             </div>
           </div>
 
-          {/* Quick Telemetry Summary */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="rounded-[10px] border border-border/80 bg-card p-4 shadow-2xs">
-              <span className="text-xs text-muted-foreground">Total Invocations</span>
-              <div className="text-xl font-bold font-mono text-foreground mt-1">
-                {initialTelemetry.totalRuns}
+          {/* 4. Four Summary Metric Counters (100% Real Telemetry Data) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+            {/* Card 1: Total Invocations */}
+            <div className="rounded-2xl md:rounded-3xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 dark:hover:border-border transition-all">
+              <span className="text-xs font-medium text-slate-500 dark:text-muted-foreground">
+                Total Invocations
+              </span>
+              <div className="flex items-baseline gap-2.5 mt-3">
+                <span className="font-heading text-3xl font-bold text-slate-900 dark:text-foreground tracking-tight">
+                  {initialTelemetry.totalRuns}
+                </span>
+                <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-full border border-indigo-200/60 dark:border-indigo-800/40">
+                  Telemetry
+                </span>
               </div>
             </div>
-            <div className="rounded-[10px] border border-border/80 bg-card p-4 shadow-2xs">
-              <span className="text-xs text-muted-foreground">Avg Latency</span>
-              <div className="text-xl font-bold font-mono text-foreground mt-1">
-                {Math.round(initialTelemetry.avgLatencyMs)} ms
+
+            {/* Card 2: Avg Latency */}
+            <div className="rounded-2xl md:rounded-3xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 dark:hover:border-border transition-all">
+              <span className="text-xs font-medium text-slate-500 dark:text-muted-foreground">
+                Avg Latency
+              </span>
+              <div className="flex items-baseline gap-2 mt-3">
+                <span className="font-heading text-3xl font-bold text-slate-900 dark:text-foreground tracking-tight">
+                  {Math.round(initialTelemetry.avgLatencyMs)}
+                </span>
+                <span className="text-xs font-normal text-slate-400">ms</span>
               </div>
             </div>
-            <div className="rounded-[10px] border border-border/80 bg-card p-4 shadow-2xs">
-              <span className="text-xs text-muted-foreground">Total Tokens</span>
-              <div className="text-xl font-bold font-mono text-foreground mt-1">
-                {initialTelemetry.totalTokens.toLocaleString()}
+
+            {/* Card 3: Total Tokens */}
+            <div className="rounded-2xl md:rounded-3xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 dark:hover:border-border transition-all">
+              <span className="text-xs font-medium text-slate-500 dark:text-muted-foreground">
+                Total Tokens
+              </span>
+              <div className="flex items-baseline gap-2.5 mt-3">
+                <span className="font-heading text-3xl font-bold text-slate-900 dark:text-foreground tracking-tight">
+                  {initialTelemetry.totalTokens.toLocaleString()}
+                </span>
+                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
+                  Tokens
+                </span>
               </div>
             </div>
-            <div className="rounded-[10px] border border-border/80 bg-card p-4 shadow-2xs">
-              <span className="text-xs text-muted-foreground">Benchmark Runs</span>
-              <div className="text-xl font-bold font-mono text-foreground mt-1">
-                {initialRuns.length}
+
+            {/* Card 4: Benchmark Runs */}
+            <div className="rounded-2xl md:rounded-3xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 dark:hover:border-border transition-all">
+              <span className="text-xs font-medium text-slate-500 dark:text-muted-foreground">
+                Benchmark Runs
+              </span>
+              <div className="flex items-baseline gap-2.5 mt-3">
+                <span className="font-heading text-3xl font-bold text-slate-900 dark:text-foreground tracking-tight">
+                  {initialRuns.length}
+                </span>
+                <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200/60 dark:border-amber-800/40">
+                  Evaluations
+                </span>
               </div>
             </div>
           </div>
