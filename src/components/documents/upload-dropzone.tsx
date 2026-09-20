@@ -81,7 +81,7 @@ export function UploadDropzone({
       {success && (
         <div className="rounded-xl border border-success/20 bg-success/10 p-3 text-xs text-success flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
-          <span>File uploaded successfully! Click &quot;Process&quot; in the list below to extract and chunk.</span>
+          <span>File uploaded and indexed successfully! Ready for AI chat & search.</span>
         </div>
       )}
 
@@ -169,7 +169,7 @@ export function UploadDropzone({
               {isUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-                  Uploading...
+                  Uploading & Indexing...
                 </>
               ) : (
                 "Upload File"

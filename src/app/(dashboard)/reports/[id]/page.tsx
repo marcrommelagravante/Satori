@@ -76,7 +76,7 @@ export default async function ReportDetailPage({
     : "bg-amber-500/10 text-amber-500 border-amber-500/20";
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-16">
+    <div className="w-full space-y-6 md:space-y-8 pb-16">
       {/* Top Navigation */}
       <div className="flex items-center justify-between">
         <Button

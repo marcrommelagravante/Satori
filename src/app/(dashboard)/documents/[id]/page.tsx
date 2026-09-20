@@ -73,7 +73,7 @@ export default async function DocumentDetailPage({
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 w-full pb-16">
       {/* Top back navigation */}
       <div className="flex items-center justify-between">
         <Button asChild variant="ghost" size="sm" className="text-muted-foreground">

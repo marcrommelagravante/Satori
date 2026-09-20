@@ -16,6 +16,9 @@ import {
   List,
   Loader2,
   Upload,
+  Clock,
+  Play,
+  AlertCircle,
 } from "lucide-react";
 import {
   processDocumentAction,
@@ -75,7 +78,9 @@ export function DocumentList({
           : statusFilter === "ready"
           ? doc.status === "ready"
           : statusFilter === "processing"
-          ? doc.status === "processing" || doc.status === "pending"
+          ? doc.status === "processing" || processingId === doc.id
+          : statusFilter === "pending"
+          ? doc.status === "pending"
           : doc.status === "failed";
 
       return matchesSearch && matchesType && matchesStatus;
@@ -221,6 +226,7 @@ export function DocumentList({
               <option value="all">All Status</option>
               <option value="ready">Indexed</option>
               <option value="processing">Processing</option>
+              <option value="pending">Queued</option>
               <option value="failed">Failed</option>
             </select>
             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
@@ -333,9 +339,8 @@ export function DocumentList({
                   const format = getFormat(doc.name);
                   const isSelected = selectedIds.has(doc.id);
                   const isProcessing =
-                    processingId === doc.id ||
-                    doc.status === "processing" ||
-                    doc.status === "pending";
+                    processingId === doc.id || doc.status === "processing";
+                  const isPending = doc.status === "pending" && processingId !== doc.id;
                   const isFailed = doc.status === "failed";
 
                   return (
@@ -384,8 +389,17 @@ export function DocumentList({
                             <Loader2 className="h-3 w-3 animate-spin" />
                             Processing
                           </span>
+                        ) : isPending ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/50">
+                            <Clock className="h-3 w-3 text-slate-400" />
+                            Queued
+                          </span>
                         ) : isFailed ? (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 border border-rose-100/80 dark:border-rose-800/40">
+                          <span
+                            title={doc.errorMessage || "Processing failed"}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 border border-rose-100/80 dark:border-rose-800/40 cursor-help"
+                          >
+                            <AlertCircle className="h-3 w-3 text-rose-500" />
                             Failed
                           </span>
                         ) : (
@@ -427,8 +441,22 @@ export function DocumentList({
                                 disabled={deletingId === doc.id || processingId === doc.id}
                                 className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs hover:bg-slate-100 dark:hover:bg-muted text-slate-700 dark:text-foreground transition-colors cursor-pointer"
                               >
-                                <RotateCcw className="h-3.5 w-3.5 text-slate-400" />
-                                <span>Re-index Document</span>
+                                {doc.status === "failed" ? (
+                                  <>
+                                    <RotateCcw className="h-3.5 w-3.5 text-rose-500" />
+                                    <span>Retry Ingestion</span>
+                                  </>
+                                ) : doc.status === "pending" ? (
+                                  <>
+                                    <Play className="h-3.5 w-3.5 text-[#4F46E5]" />
+                                    <span>Process Document</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <RotateCcw className="h-3.5 w-3.5 text-slate-400" />
+                                    <span>Re-index Document</span>
+                                  </>
+                                )}
                               </button>
 
                               <div className="my-1 border-t border-slate-100 dark:border-border" />
@@ -482,8 +510,24 @@ export function DocumentList({
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-100 dark:border-border/50 flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    {doc.status === "processing" ? "Processing" : doc.status === "failed" ? "Failed" : "Indexed"}
+                  <span
+                    className={`text-[11px] font-semibold ${
+                      doc.status === "ready"
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : doc.status === "failed"
+                        ? "text-rose-600 dark:text-rose-400"
+                        : doc.status === "pending"
+                        ? "text-slate-500 dark:text-slate-400"
+                        : "text-purple-600 dark:text-purple-400"
+                    }`}
+                  >
+                    {doc.status === "processing" || processingId === doc.id
+                      ? "Processing"
+                      : doc.status === "failed"
+                      ? "Failed"
+                      : doc.status === "pending"
+                      ? "Queued"
+                      : "Indexed"}
                   </span>
                   <Link
                     href={`/documents/${doc.id}?ws=${workspaceId}`}

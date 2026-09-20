@@ -147,7 +147,7 @@ export function KnowledgeHubView({
       </div>
 
       {/* Central Search Bar Hero matching Image 1 */}
-      <div className="w-full max-w-4xl mx-auto space-y-3 pt-2">
+      <div className="w-full max-w-5xl mx-auto space-y-3 pt-2">
         <form
           onSubmit={handleFormSubmit}
           className="relative flex items-center rounded-2xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card p-2 shadow-xs transition-all focus-within:border-[#4F46E5] focus-within:ring-2 focus-within:ring-[#4F46E5]/10"

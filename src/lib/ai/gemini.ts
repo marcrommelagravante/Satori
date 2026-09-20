@@ -281,31 +281,54 @@ User Question: ${userQuestion}`;
     parts: [{ text: userContent }],
   });
 
-  try {
-    const response = await client.models.generateContent({
-      model: GENERATION_MODEL,
-      contents: contents,
-      config: {
-        systemInstruction: systemPrompt,
-        temperature: 0.2,
-      },
-    });
+  const MAX_RETRIES = 2;
+  let lastError: unknown = null;
 
-    const responseText = response.text || "";
-    const promptTokens = response.usageMetadata?.promptTokenCount ?? Math.ceil(userContent.length / 4);
-    const outputTokens = response.usageMetadata?.candidatesTokenCount ?? Math.ceil(responseText.length / 4);
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await client.models.generateContent({
+        model: GENERATION_MODEL,
+        contents: contents,
+        config: {
+          systemInstruction: systemPrompt,
+          temperature: 0.2,
+        },
+      });
 
-    return {
-      text: responseText.trim(),
-      model: GENERATION_MODEL,
-      promptTokens,
-      outputTokens,
-    };
-  } catch (error) {
-    console.warn(
-      "Gemini generation error, using deterministic fallback response:",
-      error instanceof Error ? error.message : error
-    );
-    return generateFallbackGroundedResponse(options);
+      const responseText = response.text || "";
+      const promptTokens =
+        response.usageMetadata?.promptTokenCount ??
+        Math.ceil(userContent.length / 4);
+      const outputTokens =
+        response.usageMetadata?.candidatesTokenCount ??
+        Math.ceil(responseText.length / 4);
+
+      return {
+        text: responseText.trim(),
+        model: GENERATION_MODEL,
+        promptTokens,
+        outputTokens,
+      };
+    } catch (error) {
+      lastError = error;
+      const errMsg = error instanceof Error ? error.message : String(error);
+      const isRetryable =
+        errMsg.includes("503") ||
+        errMsg.includes("high demand") ||
+        errMsg.includes("UNAVAILABLE") ||
+        errMsg.includes("429");
+      if (attempt < MAX_RETRIES && isRetryable) {
+        console.log(`[Gemini API] Temporary spike detected (${errMsg.slice(0, 60)}...). Retrying in ${(attempt + 1) * 1.5}s...`);
+        await new Promise((resolve) => setTimeout(resolve, 1500 * (attempt + 1)));
+        continue;
+      }
+      break;
+    }
   }
+
+  console.warn(
+    "Gemini generation error, using deterministic fallback response:",
+    lastError instanceof Error ? lastError.message : lastError
+  );
+  return generateFallbackGroundedResponse(options);
 }

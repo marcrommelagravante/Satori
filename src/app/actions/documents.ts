@@ -49,6 +49,16 @@ export async function uploadDocumentAction(formData: FormData) {
       category,
     });
 
+    // Auto-process document (extract, chunk, embed)
+    let processingError: string | null = null;
+    try {
+      await processDocument(doc.id);
+    } catch (procErr) {
+      console.error(`[DOCUMENT INGESTION FAILED] Doc ${doc.id}:`, procErr);
+      processingError =
+        procErr instanceof Error ? procErr.message : "Ingestion processing failed";
+    }
+
     // Record audit event
     await logAuditEvent({
       workspaceId,
@@ -60,11 +70,22 @@ export async function uploadDocumentAction(formData: FormData) {
         filename: file.name,
         sizeBytes: buffer.length,
         category,
+        processed: !processingError,
+        processingError,
       },
     });
 
     revalidatePath("/documents");
     revalidatePath("/dashboard");
+    revalidatePath("/knowledge");
+
+    if (processingError) {
+      return {
+        success: false,
+        documentId: doc.id,
+        error: `File uploaded, but indexing encountered an issue: ${processingError}. You can retry indexing from the document list.`,
+      };
+    }
 
     return { success: true, documentId: doc.id };
   } catch (err) {
