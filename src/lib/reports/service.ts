@@ -22,7 +22,7 @@ export async function createReport(
     .insert(reports)
     .values({
       workspaceId: input.workspaceId,
-      userId: input.userId || null,
+      createdBy: input.userId || null,
       conversationId: input.conversationId || null,
       title: input.title,
       type: input.type,

@@ -42,6 +42,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       reports={reportsList}
       workspaceId={activeWorkspace.id}
       documentNamesMap={documentNamesMap}
+      availableDocuments={workspaceDocs}
     />
   );
 }

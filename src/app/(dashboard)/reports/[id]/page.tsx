@@ -55,11 +55,25 @@ export default async function ReportDetailPage({
           .where(inArray(documents.id, report.sourceDocumentIds))
       : [];
 
-  const isComparison = report.type === "document_comparison";
-  const TypeIcon = isComparison ? Scale : FileSpreadsheet;
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const content = report.content as any;
+
+  const isComparison =
+    report.type === "document_comparison" || content?.format === "comparison";
+  const isAnalysis =
+    content?.format === "analysis" ||
+    (!isComparison && report.title.toLowerCase().includes("analysis"));
+  const TypeIcon = isComparison ? Scale : isAnalysis ? Sparkles : FileSpreadsheet;
+  const badgeLabel = isComparison
+    ? "Document Comparison"
+    : isAnalysis
+    ? "Deep Analysis"
+    : "Executive Summary";
+  const badgeClass = isComparison
+    ? "bg-indigo-500/10 text-indigo-500 border-indigo-500/20"
+    : isAnalysis
+    ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
+    : "bg-amber-500/10 text-amber-500 border-amber-500/20";
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-16">
@@ -92,16 +106,10 @@ export default async function ReportDetailPage({
         <div className="flex flex-wrap items-center gap-2">
           <Badge
             variant="outline"
-            className={`gap-1.5 px-3 py-1 text-xs font-semibold ${
-              isComparison
-                ? "bg-indigo-500/10 text-indigo-500 border-indigo-500/20"
-                : "bg-amber-500/10 text-amber-500 border-amber-500/20"
-            }`}
+            className={`gap-1.5 px-3 py-1 text-xs font-semibold ${badgeClass}`}
           >
             <TypeIcon className="h-3.5 w-3.5" />
-            <span>
-              {isComparison ? "Document Comparison" : "Document Summary"}
-            </span>
+            <span>{badgeLabel}</span>
           </Badge>
 
           <Badge
@@ -160,7 +168,7 @@ export default async function ReportDetailPage({
         {!isComparison && (
           <>
             {/* Executive Summary */}
-            {content.summary && (
+            {(content.summary || content.executiveSummary) && (
               <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6 shadow-xs">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -171,7 +179,7 @@ export default async function ReportDetailPage({
                   </h2>
                 </div>
                 <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                  {content.summary}
+                  {content.summary || content.executiveSummary}
                 </p>
               </div>
             )}

@@ -105,3 +105,124 @@ export const TECH_ORG_BENCHMARK_CASES: DemoBenchmarkCase[] = [
     difficulty: "hard",
   },
 ];
+
+export interface DemoReportDefinition {
+  title: string;
+  type: "document_summary" | "document_comparison";
+  sourceDocNames: string[];
+  content: {
+    executiveSummary: string;
+    sections: Array<{ title: string; content: string }>;
+    keyFindings?: string[];
+    recommendations?: string[];
+  };
+}
+
+export const TECH_ORG_REPORTS: DemoReportDefinition[] = [
+  {
+    title: "Synthetix Engineering Architecture Standards Summary",
+    type: "document_summary",
+    sourceDocNames: ["Synthetix-Engineering-Handbook-v2.4.txt"],
+    content: {
+      executiveSummary:
+        "High-level synthesis of Synthetix Systems engineering bylaws, modular monolith architectural boundaries, multi-tenant database conventions, latency budgets, and PR review protocols.",
+      sections: [
+        {
+          title: "1. Architectural Boundaries & Monolith Principles",
+          content:
+            "Synthetix enforces a modular monolith first strategy. Domain boundaries are strictly preserved via explicit TypeScript public interfaces. Cross-tenant data isolation requires explicit workspaceId inclusion in every database query.",
+        },
+        {
+          title: "2. Service Level Objectives & Performance Budgets",
+          content:
+            "Core platform uptime target is 99.95%. Read latency budgets target p95 < 200ms, semantic search retrieval targets p95 < 350ms, and grounded AI generation targets p95 < 5000ms with sliding-window rate limiters.",
+        },
+        {
+          title: "3. Pull Request Review & Code Gates",
+          content:
+            "A minimum quorum of 2 staff or senior engineers must approve each PR. Automated CI pipelines require 100% clean compilation, zero lint warnings, and passing automated test suites before merge approval.",
+        },
+      ],
+      keyFindings: [
+        "Modular monolith architecture eliminates distributed network latency while enforcing strict internal domain boundaries.",
+        "Zero-trust tenant isolation is verified at the database query layer rather than relying on client parameters.",
+        "Strict latency budgets ensure rapid user interactions across semantic search and grounded AI chat.",
+      ],
+      recommendations: [
+        "Monitor latency budgets continuously using automated application telemetry dashboards.",
+        "Enforce pre-commit type-check and lint hooks across all local developer environments.",
+      ],
+    },
+  },
+  {
+    title: "Security Incident Response & Compliance Analysis",
+    type: "document_summary",
+    sourceDocNames: ["Synthetix-Security-Incident-Response-Policy.txt"],
+    content: {
+      executiveSummary:
+        "Comprehensive risk and analytical breakdown detailing Synthetix Systems information security incident response procedures, credential rotation cycles, emergency revocation protocols, and 72-hour regulatory breach notification mandates.",
+      sections: [
+        {
+          title: "1. Incident Classification & Response Timelines",
+          content:
+            "Incidents are categorized into three severity tiers. Severity 1 (Critical Incident) requires an Incident Commander assigned within 15 minutes. Severity 2 requires mitigation within 1 hour.",
+        },
+        {
+          title: "2. Secrets Management & Credential Lifecycle",
+          content:
+            "All API credentials and database secrets must rotate every 90 days. If compromised, credentials must be revoked immediately, emergency replacement tokens deployed via secrets managers, and 72 hours of audit logs inspected.",
+        },
+        {
+          title: "3. Regulatory Compliance & Notification Protocol",
+          content:
+            "Under SOC2 Type II and GDPR obligations, confirmed personal data exposures require formal notification to authorities and affected client organizations within 72 hours.",
+        },
+      ],
+      keyFindings: [
+        "90-day credential rotation cycles minimize exposure windows for production API keys.",
+        "Structured audit logging captures all database queries and report generation events for forensic tracking.",
+      ],
+      recommendations: [
+        "Automate secrets scanning pre-commit hooks to block hardcoded keys from entering Git history.",
+        "Schedule quarterly simulated incident response drills across all engineering teams.",
+      ],
+    },
+  },
+  {
+    title: "Engineering Bylaws vs Security Policy Comparison",
+    type: "document_comparison",
+    sourceDocNames: [
+      "Synthetix-Engineering-Handbook-v2.4.txt",
+      "Synthetix-Security-Incident-Response-Policy.txt",
+    ],
+    content: {
+      executiveSummary:
+        "Comparative evaluation mapping operational engineering guidelines against security compliance mandates to ensure compatibility between developer velocity and security compliance.",
+      sections: [
+        {
+          title: "1. Data Isolation & Tenant Boundaries",
+          content:
+            "Both policies mandate zero-trust isolation and prohibit hardcoded credentials across source repositories and runtime bundles.",
+        },
+        {
+          title: "2. Performance vs Audit Overhead",
+          content:
+            "Grounded AI generation latency targets (< 5000ms p95) comfortably absorb the security requirement for synchronous audit log event recording.",
+        },
+        {
+          title: "3. Quorum vs Emergency Action Protocols",
+          content:
+            "While standard PRs require 2 senior approvals, emergency hotfixes during Severity 1 incidents follow an accelerated single-approver protocol.",
+        },
+      ],
+      keyFindings: [
+        "Operational SLOs and security SLAs are fully compatible under the current modular monolith framework.",
+        "Tenant-scoped audit trails provide complete provenance for compliance investigations.",
+      ],
+      recommendations: [
+        "Align automated test gates with security dependency scanning in CI/CD pipelines.",
+      ],
+    },
+  },
+];
+
