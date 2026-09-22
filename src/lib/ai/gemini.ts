@@ -167,6 +167,9 @@ export async function generateBatchEmbeddings(
 export const GENERATION_MODEL =
   process.env.GEMINI_GENERATION_MODEL || "gemini-3.6-flash";
 
+export const FALLBACK_GENERATION_MODEL =
+  process.env.GEMINI_FALLBACK_MODEL || "gemini-3.1-flash-lite";
+
 export interface ChatHistoryMessage {
   role: "user" | "assistant";
   content: string;

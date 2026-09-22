@@ -119,6 +119,16 @@ export default async function ReportDetailPage({
             {report.status}
           </Badge>
 
+          {content?.generationSource && (
+            <Badge
+              variant="outline"
+              className="text-xs bg-primary/10 text-primary border-primary/20 flex items-center gap-1 font-mono text-[11px]"
+            >
+              <Sparkles className="h-3 w-3" />
+              <span>{content.generationSource}</span>
+            </Badge>
+          )}
+
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto">
             <Calendar className="h-3.5 w-3.5" />
             {new Date(report.createdAt).toLocaleDateString(undefined, {

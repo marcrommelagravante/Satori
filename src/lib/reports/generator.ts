@@ -1,4 +1,8 @@
-import { getGenAIClient, GENERATION_MODEL } from "@/lib/ai/gemini";
+import {
+  getGenAIClient,
+  GENERATION_MODEL,
+  FALLBACK_GENERATION_MODEL,
+} from "@/lib/ai/gemini";
 import { db } from "@/lib/db";
 import { documents, documentVersions, documentChunks } from "@/lib/db/schema";
 import { inArray, eq, and } from "drizzle-orm";
@@ -21,6 +25,7 @@ export interface GeneratedReportContent {
   keyDifferences?: string[];
   sections: Array<{ title: string; content: string }>;
   recommendations?: string[];
+  generationSource?: string;
 }
 
 /**
@@ -91,6 +96,78 @@ async function getDocumentsContext(
 }
 
 /**
+ * Normalizes error message for friendly user presentation.
+ */
+function formatGeminiError(error: unknown): Error {
+  const errMsg = error instanceof Error ? error.message : String(error);
+  if (
+    errMsg.includes("503") ||
+    errMsg.includes("UNAVAILABLE") ||
+    errMsg.includes("high demand") ||
+    errMsg.includes("429") ||
+    errMsg.includes("RESOURCE_EXHAUSTED") ||
+    errMsg.toLowerCase().includes("overloaded")
+  ) {
+    return new Error(
+      "AI report generation is temporarily unavailable due to high demand. Please try again in a few minutes."
+    );
+  }
+  return new Error(`Gemini API error during report generation: ${errMsg}`);
+}
+
+/**
+ * Calls Gemini model with retry logic and exponential backoff (1.5s -> 3s -> 6s).
+ */
+async function callModelWithRetry(
+  client: NonNullable<ReturnType<typeof getGenAIClient>>,
+  model: string,
+  prompt: string,
+  maxRetries = 3
+): Promise<{ parsed: Record<string, unknown>; model: string }> {
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 0) {
+        const delayMs = 1500 * Math.pow(2, attempt - 1);
+        console.warn(
+          `[REPORT GENERATOR] Retry attempt ${attempt}/${maxRetries} for model ${model} after ${delayMs}ms delay...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+
+      const response = await client.models.generateContent({
+        model,
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: {
+          temperature: 0.2,
+          responseMimeType: "application/json",
+        },
+      });
+
+      const raw = response.text?.trim() || "";
+      let cleanJson = raw;
+      if (cleanJson.startsWith("```json")) {
+        cleanJson = cleanJson.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+      } else if (cleanJson.startsWith("```")) {
+        cleanJson = cleanJson.replace(/^```\s*/, "").replace(/\s*```$/, "");
+      }
+
+      const parsed = JSON.parse(cleanJson);
+      return { parsed, model };
+    } catch (err) {
+      lastError = err;
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `[REPORT GENERATOR] Call to model ${model} (attempt ${attempt + 1}/${maxRetries + 1}) failed: ${errMsg}`
+      );
+    }
+  }
+
+  throw lastError;
+}
+
+/**
  * Generates a grounded, authentic report synthesized from selected documents using Gemini.
  */
 export async function generateGroundedReport(
@@ -109,6 +186,13 @@ export async function generateGroundedReport(
     );
   }
 
+  const client = getGenAIClient();
+  if (!client) {
+    throw new Error(
+      "Gemini API key is not configured. Report generation requires a valid API key."
+    );
+  }
+
   // Format documents into context
   const context = docs
     .map(
@@ -117,11 +201,7 @@ export async function generateGroundedReport(
     )
     .join("\n\n");
 
-  const client = getGenAIClient();
-
-  if (client) {
-    try {
-      const prompt = `You are Satori's Executive Knowledge Analyst.
+  const prompt = `You are Satori's Executive Knowledge Analyst.
 Your task is to analyze the provided documents and synthesize a professional, 100% grounded report in JSON format.
 
 Report Title: "${title}"
@@ -143,90 +223,82 @@ CRITICAL CITATION & FACTUAL GROUNDING RULES:
 1. All assertions must strictly reflect the facts in the provided documents. Do NOT make up unsupported data.
 2. Return ONLY valid JSON matching this structure without Markdown fences.`;
 
-      const response = await client.models.generateContent({
-        model: GENERATION_MODEL,
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        config: {
-          temperature: 0.2,
-          responseMimeType: "application/json",
-        },
-      });
+  let generationResult: { parsed: Record<string, unknown>; model: string } | null = null;
+  const candidateModels = [
+    GENERATION_MODEL,
+    FALLBACK_GENERATION_MODEL,
+    "gemini-3.5-flash",
+  ].filter((m, i, arr): m is string => Boolean(m) && arr.indexOf(m) === i);
 
-      const raw = response.text?.trim() || "";
-      const parsed = JSON.parse(raw);
+  let lastError: unknown = null;
 
-      return {
-        format,
-        summary: parsed.summary || parsed.executiveSummary || "",
-        executiveSummary: parsed.executiveSummary || parsed.summary || "",
-        keyFindings: Array.isArray(parsed.keyFindings) ? parsed.keyFindings : undefined,
-        keyDifferences: Array.isArray(parsed.keyDifferences) ? parsed.keyDifferences : undefined,
-        sections: Array.isArray(parsed.sections) ? parsed.sections : [],
-        recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : undefined,
-      };
+  for (let i = 0; i < candidateModels.length; i++) {
+    const modelToTry = candidateModels[i];
+    const retries = i === 0 ? 3 : 2;
+    try {
+      if (i > 0) {
+        console.warn(
+          `[REPORT GENERATOR] Attempting fallback model (${i}/${candidateModels.length - 1}): ${modelToTry}...`
+        );
+      }
+      generationResult = await callModelWithRetry(client, modelToTry, prompt, retries);
+      break;
     } catch (err) {
-      console.warn("[REPORT GENERATION WARNING] Gemini call failed, falling back to deterministic extraction:", err);
+      lastError = err;
+      console.warn(
+        `[REPORT GENERATOR] Model ${modelToTry} exhausted all ${retries} retries:`,
+        err instanceof Error ? err.message : err
+      );
     }
   }
 
-  // Deterministic fallback for offline/test environments
-  const docNames = docs.map((d) => d.name).join(", ");
-  const firstSnippet = docs[0]?.text.slice(0, 300).trim() || "Workspace asset review.";
-
-  if (format === "comparison") {
-    return {
-      format: "comparison",
-      executiveSummary: `Comparative synthesis across ${docs.length} workspace asset(s): ${docNames}.${focusTopic ? ` Focus: ${focusTopic}.` : ""}`,
-      keyDifferences: docs.map(
-        (d, idx) => `Asset ${idx + 1} (${d.name}): Documents operational baseline and standards.`
-      ),
-      sections: [
-        {
-          title: "1. Scope & Core Objectives",
-          content: `Evaluation grounded in ${docNames}. Initial extract: "${firstSnippet.slice(0, 150)}..."`,
-        },
-        {
-          title: "2. Comparative Alignment & Variance",
-          content: "Analysis highlights direct alignment with active tenant requirements and operational standards.",
-        },
-        {
-          title: "3. Synthesis & Governance Implications",
-          content: "Continuous verification is recommended to preserve alignment across future document revisions.",
-        },
-      ],
-      recommendations: [
-        "Re-run cross-document comparison whenever source assets are updated.",
-        "Ensure all compliance milestones are scheduled in team operating plans.",
-      ],
-    };
+  if (!generationResult) {
+    throw formatGeminiError(lastError);
   }
+
+  const { parsed, model } = generationResult;
+
+  const rawSummary =
+    typeof parsed.summary === "string"
+      ? parsed.summary
+      : typeof parsed.executiveSummary === "string"
+      ? parsed.executiveSummary
+      : "";
+
+  const rawExecutiveSummary =
+    typeof parsed.executiveSummary === "string"
+      ? parsed.executiveSummary
+      : rawSummary;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sections: Array<{ title: string; content: string }> = Array.isArray(parsed.sections)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ? parsed.sections.map((s: any) => ({
+        title: typeof s?.title === "string" ? s.title : "Section",
+        content: typeof s?.content === "string" ? s.content : "",
+      }))
+    : [];
+
+  const keyFindings: string[] | undefined = Array.isArray(parsed.keyFindings)
+    ? parsed.keyFindings.map(String)
+    : undefined;
+
+  const keyDifferences: string[] | undefined = Array.isArray(parsed.keyDifferences)
+    ? parsed.keyDifferences.map(String)
+    : undefined;
+
+  const recommendations: string[] | undefined = Array.isArray(parsed.recommendations)
+    ? parsed.recommendations.map(String)
+    : undefined;
 
   return {
     format,
-    summary: `Synthesized report for ${title} based on ${docs.length} source document(s): ${docNames}.${focusTopic ? ` Guidance: ${focusTopic}.` : ""}`,
-    executiveSummary: `Synthesized report for ${title} based on ${docs.length} source document(s): ${docNames}.${focusTopic ? ` Guidance: ${focusTopic}.` : ""}`,
-    keyFindings: [
-      `Grounded in ${docs.length} verified workspace file(s): ${docNames}.`,
-      `Key excerpt: "${firstSnippet.slice(0, 120)}..."`,
-      "Zero-trust tenant isolation confirmed across all extracted context chunks.",
-    ],
-    sections: [
-      {
-        title: "1. Executive Overview & Context",
-        content: `This report synthesizes evidence extracted from ${docNames}. Primary excerpt:\n\n"${firstSnippet}"`,
-      },
-      {
-        title: format === "analysis" ? "2. Detailed Risk & Capability Analysis" : "2. Core Findings & Operational Standards",
-        content: "Documented guidelines demonstrate consistent adherence to internal operating bylaws and architectural boundaries.",
-      },
-      {
-        title: "3. Strategic Recommendations & Next Steps",
-        content: "Maintain indexing of future updates to preserve retrieval relevance and semantic accuracy.",
-      },
-    ],
-    recommendations: [
-      "Review source documents quarterly to ensure ongoing policy validity.",
-      "Track compliance metrics across related engineering workstreams.",
-    ],
+    summary: rawSummary,
+    executiveSummary: rawExecutiveSummary,
+    keyFindings,
+    keyDifferences,
+    sections,
+    recommendations,
+    generationSource: model,
   };
 }
