@@ -95,6 +95,7 @@ export function TopNav({ user, workspaceRole }: TopNavProps) {
                   src={user.image}
                   alt={displayName}
                   className="h-full w-full object-cover"
+                  referrerPolicy="no-referrer"
                 />
               ) : (
                 <span>

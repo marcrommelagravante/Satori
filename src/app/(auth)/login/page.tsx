@@ -10,10 +10,6 @@ export default async function LoginPage() {
     redirect("/dashboard");
   }
 
-  const hasGithub = Boolean(
-    process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET
-  );
-
   return (
     <div className="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2 bg-background">
       {/* Left Column: Brand Hero & Value Proposition matching Mockup Panel 6 */}
@@ -72,14 +68,14 @@ export default async function LoginPage() {
 
           <div className="mb-6 text-left">
             <h2 className="font-heading text-xl font-bold tracking-tight text-foreground">
-              Welcome back
+              Welcome to Satori
             </h2>
             <p className="text-xs text-muted-foreground mt-1">
-              Sign in to your workspace
+              Sign in with your Google account to access your workspace
             </p>
           </div>
 
-          <LoginForm hasGithub={hasGithub} />
+          <LoginForm />
         </div>
       </div>
     </div>

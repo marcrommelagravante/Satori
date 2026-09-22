@@ -16,8 +16,16 @@ export function UserNav({ user }: UserNavProps) {
   return (
     <div className="flex items-center justify-between border-t border-border pt-3">
       <div className="flex items-center gap-2.5 truncate">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-xs border border-border">
-          {user.name ? (
+        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-xs border border-border overflow-hidden">
+          {user.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.image}
+              alt={user.name || "User avatar"}
+              className="h-full w-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : user.name ? (
             user.name.substring(0, 1).toUpperCase()
           ) : (
             <UserIcon className="h-4 w-4" />

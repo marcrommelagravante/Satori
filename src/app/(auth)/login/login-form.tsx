@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 function GoogleIcon({ className }: { className?: string }) {
@@ -29,174 +30,76 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-function MicrosoftIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24">
-      <path fill="#F25022" d="M1 1h10v10H1z" />
-      <path fill="#00A4EF" d="M1 13h10v10H1z" />
-      <path fill="#7FBA00" d="M13 1h10v10H13z" />
-      <path fill="#FFB900" d="M13 13h10v10H13z" />
-    </svg>
-  );
-}
-
-export function LoginForm({ hasGithub }: { hasGithub: boolean }) {
-  const router = useRouter();
-  const [email, setEmail] = React.useState("you@company.com");
-  const [password, setPassword] = React.useState("••••••••");
-  const [showPassword, setShowPassword] = React.useState(false);
-  const [rememberMe, setRememberMe] = React.useState(true);
+function LoginFormContent() {
+  const searchParams = useSearchParams();
+  const errorParam = searchParams.get("error");
   const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email) return;
+  const getErrorMessage = (error: string | null) => {
+    if (!error) return null;
+    if (error === "OAuthAccountNotLinked") {
+      return "An account with this email already exists with a different login provider.";
+    }
+    if (error === "OAuthCallbackError" || error === "OAuthSignin") {
+      return "Unable to sign in with Google. Please check your Google account and try again.";
+    }
+    return "Sign in failed. Please try again.";
+  };
 
+  const errorMessage = getErrorMessage(errorParam);
+
+  const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    setError(null);
-
     try {
-      const res = await signIn("credentials", {
-        email: email.trim().toLowerCase(),
-        name: email.split("@")[0] || "User",
-        redirect: false,
-      });
-
-      if (res?.error) {
-        setError("Unable to sign in. Please verify your credentials.");
-        setIsLoading(false);
-      } else {
-        router.push("/dashboard");
-        router.refresh();
-      }
+      await signIn("google", { callbackUrl: "/dashboard" });
     } catch {
-      setError("An unexpected error occurred.");
       setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="w-full space-y-4">
-      {error && (
-        <div className="rounded-[8px] bg-error/10 border border-error/20 p-2.5 text-xs text-error font-medium text-center">
-          {error}
+    <div className="w-full space-y-5">
+      {errorMessage && (
+        <div className="rounded-xl bg-error/10 border border-error/20 p-3 text-xs text-error font-medium text-center leading-relaxed">
+          {errorMessage}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Email Field */}
-        <div className="space-y-1.5 text-left">
-          <label className="text-xs font-semibold text-foreground">
-            Email address
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="you@company.com"
-            className="w-full h-10 px-3 rounded-[8px] border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          />
-        </div>
-
-        {/* Password Field */}
-        <div className="space-y-1.5 text-left">
-          <label className="text-xs font-semibold text-foreground">
-            Password
-          </label>
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="Enter your password"
-              className="w-full h-10 pl-3 pr-10 rounded-[8px] border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Remember me & Forgot password */}
-        <div className="flex items-center justify-between text-xs">
-          <label className="flex items-center gap-2 cursor-pointer text-muted-foreground select-none">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5"
-            />
-            <span>Remember me</span>
-          </label>
-
-          <a href="#" className="text-primary hover:underline font-medium">
-            Forgot password?
-          </a>
-        </div>
-
-        {/* Sign In Button */}
+      <div className="space-y-3">
         <Button
-          type="submit"
+          type="button"
+          onClick={handleGoogleSignIn}
           disabled={isLoading}
-          className="w-full h-10 rounded-[8px] bg-primary hover:bg-primary-dark text-primary-foreground font-semibold text-xs shadow-xs transition-all"
+          className="w-full h-12 rounded-xl bg-card hover:bg-muted/80 text-foreground border border-border hover:border-primary/40 text-sm font-medium shadow-xs flex items-center justify-center gap-3 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-primary/20"
         >
           {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : null}
-          <span>Sign In</span>
-        </Button>
-      </form>
-
-      {/* Divider */}
-      <div className="relative flex items-center justify-center my-4">
-        <div className="w-full border-t border-border" />
-        <span className="absolute bg-card px-2 text-[11px] text-muted-foreground">
-          or continue with
-        </span>
-      </div>
-
-      {/* Social Logins matching Mockup Panel 6 */}
-      <div className="grid grid-cols-2 gap-2.5">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setEmail("google.user@satori.local");
-          }}
-          className="h-9 rounded-[8px] border-border text-xs font-medium flex items-center justify-center gap-2 hover:bg-muted/60"
-        >
-          <GoogleIcon className="h-4 w-4" />
-          <span>Google</span>
-        </Button>
-
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setEmail("microsoft.user@satori.local");
-          }}
-          className="h-9 rounded-[8px] border-border text-xs font-medium flex items-center justify-center gap-2 hover:bg-muted/60"
-        >
-          <MicrosoftIcon className="h-4 w-4" />
-          <span>Microsoft</span>
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          ) : (
+            <GoogleIcon className="h-5 w-5" />
+          )}
+          <span>{isLoading ? "Connecting to Google..." : "Sign in with Google"}</span>
         </Button>
       </div>
 
-      {/* Footer */}
-      <p className="text-center text-[11px] text-muted-foreground pt-3">
-        Don&apos;t have an account?{" "}
-        <a href="mailto:admin@satori.local" className="text-primary hover:underline font-medium">
-          Contact your administrator
-        </a>
-      </p>
+      <div className="pt-4 border-t border-border/50 text-center space-y-2">
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          By signing in, you agree to Satori&apos;s workspace data and security policies.
+        </p>
+      </div>
     </div>
+  );
+}
+
+export function LoginForm() {
+  return (
+    <Suspense
+      fallback={
+        <div className="w-full h-24 flex items-center justify-center">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <LoginFormContent />
+    </Suspense>
   );
 }
