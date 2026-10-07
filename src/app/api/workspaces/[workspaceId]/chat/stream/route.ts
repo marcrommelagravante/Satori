@@ -6,8 +6,9 @@ import {
   conversations,
   messages,
   aiRuns,
+  documents,
 } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, inArray } from "drizzle-orm";
 import { searchChunks, buildRagContext } from "@/lib/rag";
 import { generateGroundedResponseStream } from "@/lib/ai/gemini";
 import { runAgentLoop, detectAgentMode } from "@/lib/ai/agent";
@@ -54,6 +55,7 @@ export async function POST(
     content?: string;
     agentMode?: boolean;
     model?: string;
+    documentIds?: string[];
   };
   try {
     body = await request.json();
@@ -64,7 +66,7 @@ export async function POST(
     );
   }
 
-  const { conversationId, content, agentMode, model: requestedModel } = body;
+  const { conversationId, content, agentMode, model: requestedModel, documentIds } = body;
   if (!conversationId || !content || content.trim().length === 0) {
     return new Response(
       JSON.stringify({ error: "conversationId and content are required." }),
@@ -73,6 +75,26 @@ export async function POST(
   }
 
   const userText = content.trim();
+
+  // Validate attached document IDs strictly within workspace boundary
+  let validDocumentIds: string[] | undefined = undefined;
+  if (Array.isArray(documentIds) && documentIds.length > 0) {
+    const cleanIds = documentIds.filter(
+      (id): id is string => typeof id === "string" && id.trim().length > 0
+    );
+    if (cleanIds.length > 0) {
+      const matchingDocs = await db
+        .select({ id: documents.id })
+        .from(documents)
+        .where(
+          and(
+            eq(documents.workspaceId, workspaceId),
+            inArray(documents.id, cleanIds)
+          )
+        );
+      validDocumentIds = matchingDocs.map((d) => d.id);
+    }
+  }
 
   // 4. Verify conversation exists and belongs to workspace
   const [conv] = await db
@@ -126,6 +148,7 @@ export async function POST(
             userId: user.id,
             conversationId,
             userPrompt: userText,
+            documentIds: validDocumentIds,
           });
 
           for (const tc of agentResult.toolCalls) {
@@ -216,13 +239,14 @@ export async function POST(
             content: m.content,
           }));
 
-        // 2. Hybrid retrieval (Dense Vector + FTS with RRF)
+        // 2. Hybrid retrieval (Dense Vector + FTS with RRF), scoped to validDocumentIds if specified
         const relevantChunks = await searchChunks({
           mode: "hybrid",
           workspaceId,
           query: userText,
           topK: 5,
-          similarityThreshold: 0.45,
+          similarityThreshold: validDocumentIds && validDocumentIds.length > 0 ? 0.35 : 0.45,
+          documentIds: validDocumentIds,
         });
 
         // 3. Context & citations preparation
@@ -232,15 +256,23 @@ export async function POST(
         sendEvent("context", {
           sources: Object.values(ragContext.citationMap),
           sourcesCount: ragContext.includedChunks.length,
+          isScoped: Boolean(validDocumentIds && validDocumentIds.length > 0),
+          scopedDocumentCount: validDocumentIds?.length ?? 0,
         });
 
         // 4. Stream response from Gemini
         const startTime = Date.now();
+        const scopedSystemInstruction =
+          validDocumentIds && validDocumentIds.length > 0
+            ? "CRITICAL INSTRUCTION: The user has attached specific reference documents to scope this answer. Your response MUST be derived strictly from the provided context corresponding to these attached documents. If the context does not contain the answer, explicitly state that the attached document(s) do not contain the requested information. Do not invent details or pull from unprovided sources."
+            : undefined;
+
         const streamGenerator = generateGroundedResponseStream({
           userQuestion: userText,
           context: ragContext.formattedContext,
           conversationHistory: historyTurns,
           model: requestedModel,
+          systemPrompt: scopedSystemInstruction,
         });
 
         let accumulatedText = "";

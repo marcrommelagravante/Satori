@@ -141,3 +141,58 @@ h1, h2, h3, h4, h5, h6 {
 code, pre, .font-mono {
   font-family: var(--font-mono), monospace;
 }
+
+/* Print Optimization for Reports and Synthesis */
+@media print {
+  /* Hide sidebar navigation, top navigation, action buttons, and back links */
+  header,
+  nav,
+  aside,
+  [data-print-hide="true"],
+  .print-hide {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+  }
+
+  .print-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  table {
+    page-break-inside: avoid;
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  th,
+  td {
+    border: 1px solid #d1d5db !important;
+    padding: 6pt 8pt !important;
+    color: #111827 !important;
+  }
+
+  h1,
+  h2,
+  h3 {
+    page-break-after: avoid;
+    color: #111827 !important;
+  }
+
+  .card,
+  [class*="bg-card"],
+  [class*="border"] {
+    border: 1px solid #e5e7eb !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+}
+

@@ -29,6 +29,7 @@ export interface RunAgentLoopOptions {
   conversationId?: string;
   userPrompt: string;
   maxIterations?: number;
+  documentIds?: string[];
 }
 
 export interface AgentToolCallLog {
@@ -87,13 +88,19 @@ async function runFallbackAgentLoop(
 
   let createdReportId: string | undefined;
 
-  // Step 1: Search documents
-  const searchExec = await executeTool("searchDocuments", { query: prompt }, context);
+  // Step 1: Search documents (scoped to documentIds if provided)
+  const searchArgs: { query: string; filters?: { documentIds: string[] } } = {
+    query: prompt,
+    ...(options.documentIds && options.documentIds.length > 0
+      ? { filters: { documentIds: options.documentIds } }
+      : {}),
+  };
+  const searchExec = await executeTool("searchDocuments", searchArgs, context);
   toolCalls.push({
     toolName: "searchDocuments",
-    args: { query: prompt },
+    args: searchArgs,
     resultSummary: searchExec.success
-      ? `Retrieved matching chunks across workspace`
+      ? `Retrieved matching chunks ${options.documentIds?.length ? "(scoped to attached documents)" : "across workspace"}`
       : `Search: ${searchExec.error}`,
     durationMs: searchExec.durationMs,
     success: searchExec.success,
@@ -103,24 +110,30 @@ async function runFallbackAgentLoop(
   const searchData = searchExec.data as any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chunks: any[] = searchData?.chunks || [];
-  const uniqueDocIds = Array.from(
+  const foundDocIds = Array.from(
     new Set(chunks.map((c) => c.documentId).filter(Boolean))
   ) as string[];
 
+  // If user attached specific documents, prioritize them; otherwise use retrieved document IDs
+  const targetDocIds =
+    options.documentIds && options.documentIds.length >= 2
+      ? options.documentIds
+      : foundDocIds;
+
   let synthesisText = "";
 
-  if (isCompare && uniqueDocIds.length >= 2) {
+  if (isCompare && targetDocIds.length >= 2) {
     // Step 2: Compare documents
     const compExec = await executeTool(
       "compareDocuments",
-      { documentIdA: uniqueDocIds[0], documentIdB: uniqueDocIds[1] },
+      { documentIdA: targetDocIds[0], documentIdB: targetDocIds[1] },
       context
     );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const compData = compExec.data as any;
     toolCalls.push({
       toolName: "compareDocuments",
-      args: { documentIdA: uniqueDocIds[0], documentIdB: uniqueDocIds[1] },
+      args: { documentIdA: targetDocIds[0], documentIdB: targetDocIds[1] },
       resultSummary: compExec.success
         ? `Aligned "${compData?.documentA?.name}" and "${compData?.documentB?.name}"`
         : `Compare error: ${compExec.error}`,
@@ -149,7 +162,7 @@ async function runFallbackAgentLoop(
               },
             ],
           },
-          sourceDocumentIds: [uniqueDocIds[0], uniqueDocIds[1]],
+          sourceDocumentIds: [targetDocIds[0], targetDocIds[1]],
         },
         context
       );
@@ -168,18 +181,18 @@ async function runFallbackAgentLoop(
     }
 
     synthesisText = `### Comparative Analysis\n\nI analyzed and compared **${compData?.documentA?.name || "Document A"}** and **${compData?.documentB?.name || "Document B"}** across your workspace documentation.\n\nKey differences and operational scopes were identified and aligned. ${createdReportId ? `A formal comparison report has been generated and saved to your workspace library.` : ""}`;
-  } else if (uniqueDocIds.length > 0) {
+  } else if (targetDocIds.length > 0) {
     // Step 2: Summarize or inspect top document
     const sumExec = await executeTool(
       "summarizeDocument",
-      { documentId: uniqueDocIds[0] },
+      { documentId: targetDocIds[0] },
       context
     );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sumData = sumExec.data as any;
     toolCalls.push({
       toolName: "summarizeDocument",
-      args: { documentId: uniqueDocIds[0] },
+      args: { documentId: targetDocIds[0] },
       resultSummary: sumExec.success
         ? `Extracted key sequential content for "${sumData?.documentName}"`
         : `Summarize error: ${sumExec.error}`,
@@ -208,7 +221,7 @@ async function runFallbackAgentLoop(
               },
             ],
           },
-          sourceDocumentIds: [uniqueDocIds[0]],
+          sourceDocumentIds: [targetDocIds[0]],
         },
         context
       );
@@ -277,13 +290,18 @@ export async function runAgentLoop(
       setTimeout(() => reject(new Error("Interactions API timeout")), 3500)
     );
 
+    const effectivePrompt =
+      options.documentIds && options.documentIds.length > 0
+        ? `[Attached Document IDs to focus on: ${options.documentIds.join(", ")}]\n${options.userPrompt}`
+        : options.userPrompt;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let currentInteraction: any = await Promise.race([
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (client as any).interactions.create({
         model,
         system_instruction: AGENT_SYSTEM_PROMPT,
-        input: options.userPrompt,
+        input: effectivePrompt,
         tools: AGENT_TOOLS,
       }),
       timeoutPromise,

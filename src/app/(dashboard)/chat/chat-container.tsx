@@ -6,7 +6,7 @@ import { MessageWithCitations, CitationDetail } from "@/lib/chat";
 import { type AgentToolCallLog } from "@/lib/ai/agent";
 import { ConversationList } from "./conversation-list";
 import { MessageThread } from "./message-thread";
-import { MessageComposer } from "./message-composer";
+import { MessageComposer, type DocumentAttachmentItem } from "./message-composer";
 import { CitationPanel } from "./citation-panel";
 import {
   createConversationAction,
@@ -30,6 +30,7 @@ interface ChatContainerProps {
   initialConversations: Conversation[];
   initialConversationId: string | null;
   initialMessages: MessageWithCitations[];
+  initialDocuments?: DocumentAttachmentItem[];
 }
 
 export function ChatContainer({
@@ -38,6 +39,7 @@ export function ChatContainer({
   initialConversations,
   initialConversationId,
   initialMessages,
+  initialDocuments = [],
 }: ChatContainerProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -58,8 +60,19 @@ export function ChatContainer({
     "gemini-3.6-flash" | "gemini-3.1-flash-lite"
   >("gemini-3.6-flash");
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const handleToggleDocument = (id: string) => {
+    setSelectedDocumentIds((prev) =>
+      prev.includes(id) ? prev.filter((dId) => dId !== id) : [...prev, id]
+    );
+  };
+
+  const handleClearDocuments = () => {
+    setSelectedDocumentIds([]);
+  };
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -180,9 +193,19 @@ export function ChatContainer({
     }
   };
 
-  const handleSendMessage = async (content: string, explicitAgentMode?: boolean) => {
+  const handleSendMessage = async (
+    content: string,
+    explicitAgentMode?: boolean,
+    explicitDocumentIds?: string[]
+  ) => {
     if (!content.trim() || isLoading) return;
     const isAgent = explicitAgentMode !== undefined ? explicitAgentMode : agentMode;
+    const docIdsToSend =
+      explicitDocumentIds !== undefined
+        ? explicitDocumentIds
+        : selectedDocumentIds.length > 0
+        ? selectedDocumentIds
+        : undefined;
 
     let targetConvId = activeConversationId;
 
@@ -240,6 +263,7 @@ export function ChatContainer({
             content,
             agentMode: isAgent,
             model: selectedModel,
+            documentIds: docIdsToSend,
           }),
           signal: abortController.signal,
         }
@@ -584,18 +608,25 @@ export function ChatContainer({
           messages={messages}
           isLoading={isLoading}
           workspaceName={workspaceName}
+          workspaceId={workspaceId}
           onSelectCitation={handleSelectCitation}
           activeCitationId={selectedCitationId}
-          onSuggestedQuestionClick={(q) => handleSendMessage(q, agentMode)}
+          onSuggestedQuestionClick={(q) =>
+            handleSendMessage(q, agentMode, selectedDocumentIds)
+          }
         />
 
-        {/* Floating Pill Composer */}
+        {/* Floating Pill Composer with Scoped Document Attachment */}
         <MessageComposer
           onSend={handleSendMessage}
           disabled={isLoading && !isStreaming}
           agentMode={agentMode}
           isStreaming={isStreaming}
           onStop={handleStopGenerating}
+          availableDocuments={initialDocuments}
+          selectedDocumentIds={selectedDocumentIds}
+          onToggleDocument={handleToggleDocument}
+          onClearDocuments={handleClearDocuments}
         />
       </div>
 

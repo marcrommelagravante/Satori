@@ -20,6 +20,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
+import { ReportExportToolbar } from "@/components/reports/report-export-toolbar";
 
 interface ReportSectionItem {
   title: string;
@@ -88,9 +89,9 @@ export default async function ReportDetailPage({
     : "bg-amber-500/10 text-amber-500 border-amber-500/20";
 
   return (
-    <div className="w-full space-y-6 md:space-y-8 pb-16">
-      {/* Top Navigation */}
-      <div className="flex items-center justify-between">
+    <div className="w-full space-y-6 md:space-y-8 pb-16 print-container">
+      {/* Top Navigation & Export Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 print-hide">
         <Button
           asChild
           variant="ghost"
@@ -103,14 +104,28 @@ export default async function ReportDetailPage({
           </Link>
         </Button>
 
-        {report.conversationId && (
-          <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs">
-            <Link href={`/chat?conv=${report.conversationId}`}>
-              <MessageSquare className="h-3.5 w-3.5 text-primary" />
-              <span>View Conversation</span>
-            </Link>
-          </Button>
-        )}
+        <div className="flex items-center gap-2 ml-auto">
+          {report.conversationId && (
+            <Button asChild variant="outline" size="sm" className="gap-1.5 text-xs">
+              <Link href={`/chat?conv=${report.conversationId}`}>
+                <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                <span>View Conversation</span>
+              </Link>
+            </Button>
+          )}
+
+          <ReportExportToolbar
+            report={{
+              id: report.id,
+              title: report.title,
+              type: report.type,
+              createdAt: report.createdAt,
+              status: report.status,
+              sourceDocs,
+              content,
+            }}
+          />
+        </div>
       </div>
 
       {/* Header Banner */}

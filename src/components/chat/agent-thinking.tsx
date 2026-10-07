@@ -16,14 +16,18 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { type AgentToolCallLog } from "@/lib/ai/agent";
+import { createReportAction } from "@/app/actions/reports";
 
 interface AgentThinkingProps {
   isLoading?: boolean;
   toolCalls?: AgentToolCallLog[];
   reportId?: string;
+  workspaceId?: string;
+  assistantText?: string;
 }
 
 const TOOL_CONFIG: Record<
@@ -66,12 +70,47 @@ export function AgentThinking({
   isLoading,
   toolCalls = [],
   reportId,
+  workspaceId,
+  assistantText,
 }: AgentThinkingProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedReportId, setSavedReportId] = useState<string | null>(null);
 
-  if (!isLoading && (!toolCalls || toolCalls.length === 0) && !reportId) {
+  const effectiveReportId = reportId || savedReportId;
+
+  if (!isLoading && (!toolCalls || toolCalls.length === 0) && !effectiveReportId) {
     return null;
   }
+
+  const handleSaveReport = async () => {
+    if (!workspaceId || isSaving) return;
+    setIsSaving(true);
+    try {
+      const isCompare = toolCalls.some(
+        (tc) => tc.toolName === "compareDocuments"
+      );
+      const title = isCompare
+        ? "Workspace Document Comparison"
+        : "Workspace Intelligence Summary";
+
+      const res = await createReportAction({
+        workspaceId,
+        title,
+        type: isCompare ? "document_comparison" : "document_summary",
+        content: {
+          summary: assistantText || "Analysis generated from workspace documents.",
+          keyFindings: toolCalls.map((tc) => tc.resultSummary),
+        },
+      });
+
+      if (res.success && res.report) {
+        setSavedReportId(res.report.id);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="my-2 space-y-2">
@@ -184,8 +223,35 @@ export function AgentThinking({
         )}
       </div>
 
+      {/* 1-Click Save as Report Artifact button if synthesis was completed without pre-existing report */}
+      {!effectiveReportId && !isLoading && workspaceId && toolCalls.length > 0 && (
+        <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <FileSpreadsheet className="h-3.5 w-3.5 text-primary" />
+            <span>Save this analysis to your Reports library?</span>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={isSaving}
+            onClick={handleSaveReport}
+            className="h-6 px-2.5 text-[11px] gap-1 border-primary/30 text-primary hover:bg-primary/10 cursor-pointer"
+          >
+            {isSaving ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <>
+                <Sparkles className="h-3 w-3" />
+                <span>Save as Report</span>
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
       {/* Generated Report Callout Card */}
-      {reportId && (
+      {effectiveReportId && (
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 shadow-xs transition-all hover:bg-primary/10">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
@@ -197,13 +263,13 @@ export function AgentThinking({
                   Structured Report Created
                 </h4>
                 <p className="text-[11px] text-muted-foreground">
-                  The agent persisted a new report artifact for this workspace.
+                  The report artifact is persisted in your workspace library.
                 </p>
               </div>
             </div>
 
             <Button asChild size="sm" className="h-7 text-xs gap-1.5 shadow-xs">
-              <Link href={`/reports/${reportId}`}>
+              <Link href={`/reports/${effectiveReportId}`}>
                 View Report
                 <ExternalLink className="h-3 w-3" />
               </Link>

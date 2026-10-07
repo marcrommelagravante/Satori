@@ -20,6 +20,7 @@ interface MessageThreadProps {
   messages: MessageWithCitations[];
   isLoading: boolean;
   workspaceName?: string;
+  workspaceId?: string;
   onSelectCitation: (citation: CitationDetail) => void;
   activeCitationId: string | null;
   onSuggestedQuestionClick: (question: string) => void;
@@ -30,6 +31,7 @@ export function MessageThread({
   messages,
   isLoading,
   workspaceName,
+  workspaceId,
   onSelectCitation,
   activeCitationId,
   onSuggestedQuestionClick,
@@ -273,6 +275,8 @@ export function MessageThread({
                 <AgentThinking
                   toolCalls={msg.toolCalls}
                   reportId={msg.reportId}
+                  workspaceId={workspaceId}
+                  assistantText={msg.content}
                 />
               )}
 

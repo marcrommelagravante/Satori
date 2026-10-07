@@ -9,7 +9,7 @@ import {
 } from "@/lib/ingestion/processor";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { enforceRateLimit } from "@/lib/security/rate-limiter";
 import { logAuditEvent } from "@/lib/security/audit";
 import { revalidatePath } from "next/cache";
@@ -167,4 +167,28 @@ export async function deleteDocumentAction(documentId: string) {
       error: err instanceof Error ? err.message : "Failed to delete document",
     };
   }
+}
+
+export async function getWorkspaceReadyDocumentsAction(workspaceId: string) {
+  await requireAuth();
+  await requireWorkspaceMember(workspaceId, "member");
+
+  return db
+    .select({
+      id: documents.id,
+      name: documents.name,
+      category: documents.category,
+      status: documents.status,
+      fileSize: documents.sizeBytes,
+      mimeType: documents.mimeType,
+      createdAt: documents.createdAt,
+    })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.workspaceId, workspaceId),
+        eq(documents.status, "ready")
+      )
+    )
+    .orderBy(desc(documents.createdAt));
 }

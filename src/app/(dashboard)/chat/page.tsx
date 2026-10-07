@@ -1,6 +1,9 @@
 import { requireAuth } from "@/lib/auth/session";
 import { getUserWorkspaces } from "@/lib/workspaces/service";
 import { getConversations, getMessages } from "@/lib/chat";
+import { db } from "@/lib/db";
+import { documents } from "@/lib/db/schema";
+import { and, eq, desc } from "drizzle-orm";
 import { ChatContainer } from "./chat-container";
 import { redirect } from "next/navigation";
 
@@ -34,6 +37,25 @@ export default async function ChatPage({
     ? await getMessages(initialConversationId, user.id)
     : [];
 
+  // Fetch ready workspace documents available for scoping
+  const initialDocuments = await db
+    .select({
+      id: documents.id,
+      name: documents.name,
+      category: documents.category,
+      status: documents.status,
+      fileSize: documents.sizeBytes,
+      mimeType: documents.mimeType,
+    })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.workspaceId, activeWorkspace.id),
+        eq(documents.status, "ready")
+      )
+    )
+    .orderBy(desc(documents.createdAt));
+
   return (
     <div className="w-full h-[calc(100vh-3rem)] md:h-[calc(100vh-4rem)] flex flex-col space-y-4">
       <ChatContainer
@@ -42,7 +64,9 @@ export default async function ChatPage({
         initialConversations={initialConversations}
         initialConversationId={initialConversationId}
         initialMessages={initialMessages}
+        initialDocuments={initialDocuments}
       />
     </div>
   );
 }
+
