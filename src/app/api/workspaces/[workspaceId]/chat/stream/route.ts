@@ -49,7 +49,12 @@ export async function POST(
   await requireWorkspaceMember(workspaceId, "member");
 
   // 3. Parse input body
-  let body: { conversationId?: string; content?: string; agentMode?: boolean };
+  let body: {
+    conversationId?: string;
+    content?: string;
+    agentMode?: boolean;
+    model?: string;
+  };
   try {
     body = await request.json();
   } catch {
@@ -59,7 +64,7 @@ export async function POST(
     );
   }
 
-  const { conversationId, content, agentMode } = body;
+  const { conversationId, content, agentMode, model: requestedModel } = body;
   if (!conversationId || !content || content.trim().length === 0) {
     return new Response(
       JSON.stringify({ error: "conversationId and content are required." }),
@@ -235,10 +240,11 @@ export async function POST(
           userQuestion: userText,
           context: ragContext.formattedContext,
           conversationHistory: historyTurns,
+          model: requestedModel,
         });
 
         let accumulatedText = "";
-        const finalModel = "gemini-3.6-flash";
+        const finalModel = requestedModel || "gemini-3.6-flash";
         const promptTokens = Math.ceil((ragContext.formattedContext.length + userText.length) / 4);
         let outputTokens = 0;
 

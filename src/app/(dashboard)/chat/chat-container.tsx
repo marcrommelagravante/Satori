@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { Conversation } from "@/lib/db/schema";
 import { MessageWithCitations, CitationDetail } from "@/lib/chat";
 import { type AgentToolCallLog } from "@/lib/ai/agent";
@@ -54,7 +54,29 @@ export function ChatContainer({
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [agentMode, setAgentMode] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<
+    "gemini-3.6-flash" | "gemini-3.1-flash-lite"
+  >("gemini-3.6-flash");
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const modelDropdownRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        modelDropdownRef.current &&
+        !modelDropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsModelDropdownOpen(false);
+      }
+    };
+    if (isModelDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isModelDropdownOpen]);
 
   // Citation panel state
   const [activeCitations, setActiveCitations] = useState<CitationDetail[]>(() => {
@@ -217,6 +239,7 @@ export function ChatContainer({
             conversationId: targetConvId,
             content,
             agentMode: isAgent,
+            model: selectedModel,
           }),
           signal: abortController.signal,
         }
@@ -472,11 +495,72 @@ export function ChatContainer({
             )}
           </button>
 
-          {/* Model Selector Dropdown Pill (Image 1 replica) */}
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200/90 dark:border-border/80 bg-white dark:bg-card px-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-200 shadow-2xs">
-            <Sparkles className="h-3.5 w-3.5 text-[#7C3AED]" />
-            <span>Gemini 2.0 Flash</span>
-            <ChevronDown className="h-3.5 w-3.5 text-slate-400 ml-0.5" />
+          {/* Model Selector Dropdown Pill */}
+          <div className="relative" ref={modelDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsModelDropdownOpen((prev) => !prev)}
+              className="flex items-center gap-2 rounded-xl border border-slate-200/90 dark:border-border/80 bg-white dark:bg-card px-3 py-1.5 text-xs font-medium text-slate-800 dark:text-slate-200 shadow-2xs hover:border-[#4F46E5]/40 hover:bg-slate-50 dark:hover:bg-muted/40 transition-all cursor-pointer"
+              title="Select AI Model"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-[#7C3AED]" />
+              <span>
+                {selectedModel === "gemini-3.1-flash-lite"
+                  ? "Gemini 3.1 Flash-Lite"
+                  : "Gemini 3.6 Flash"}
+              </span>
+              <ChevronDown className="h-3.5 w-3.5 text-slate-400 ml-0.5" />
+            </button>
+
+            {isModelDropdownOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-64 rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-card shadow-lg p-1.5 z-50 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedModel("gemini-3.6-flash");
+                    setIsModelDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-2.5 py-2 rounded-lg transition-colors flex flex-col gap-0.5 cursor-pointer ${
+                    selectedModel === "gemini-3.6-flash"
+                      ? "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-medium"
+                      : "hover:bg-slate-100 dark:hover:bg-muted/50 text-slate-700 dark:text-slate-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>Gemini 3.6 Flash</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-medium">
+                      Deep Analysis
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground">
+                    Best for document synthesis & research
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedModel("gemini-3.1-flash-lite");
+                    setIsModelDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-2.5 py-2 rounded-lg transition-colors flex flex-col gap-0.5 cursor-pointer ${
+                    selectedModel === "gemini-3.1-flash-lite"
+                      ? "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 font-medium"
+                      : "hover:bg-slate-100 dark:hover:bg-muted/50 text-slate-700 dark:text-slate-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>Gemini 3.1 Flash-Lite</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-medium">
+                      Ultra-Fast ⚡
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground">
+                    2x-3x higher speed (~2.5s responses)
+                  </span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Citations / Sources Indicator Button */}

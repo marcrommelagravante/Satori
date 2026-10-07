@@ -462,12 +462,18 @@ export async function finalizeAndSaveAssistantMessage(
     })
     .returning();
 
-  // 2. Post-process inline citations: detect [source-N] references
+  // 2. Post-process inline citations: detect [source-N], [source-1 source-2], and numeric [N] references
   const matchedSourceIds = new Set<string>();
-  const citationRegex = /\[source[-_:]?\s*(\d+)\]/gi;
-  let match;
-  while ((match = citationRegex.exec(assistantText)) !== null) {
-    matchedSourceIds.add(`source-${match[1]}`);
+  const bracketRegex = /\[([0-9\s,;a-z_-]+)\]/gi;
+  let bracketMatch;
+  while ((bracketMatch = bracketRegex.exec(assistantText)) !== null) {
+    const inner = bracketMatch[1].trim();
+    if (/source/i.test(inner) || /^[0-9\s,;-]+$/.test(inner)) {
+      const numMatches = [...inner.matchAll(/\d+/g)];
+      for (const nm of numMatches) {
+        matchedSourceIds.add(`source-${nm[0]}`);
+      }
+    }
   }
 
   // If Gemini answered based on documents but omitted explicit [source-N] tags,

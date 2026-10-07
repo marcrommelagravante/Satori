@@ -53,8 +53,26 @@ export function MessageThread({
     text: string,
     citations: CitationDetail[] = []
   ) => {
-    // Regex splits by [source-N], [source:N], [source N]
-    const parts = text.split(/(\[source[-_:]?\s*\d+\])/gi);
+    // 1. Normalize compound citation brackets: e.g. [source-1 source-2] or [1, 2] -> [source-1] [source-2]
+    const normalizedText = text.replace(
+      /\[([0-9\s,;a-z_-]+)\]/gi,
+      (fullMatch, inner) => {
+        const trimmed = inner.trim();
+        if (/source/i.test(trimmed) || /^[0-9\s,;-]+$/.test(trimmed)) {
+          const numbers = [...trimmed.matchAll(/\d+/g)].map((m) => m[0]);
+          if (numbers.length > 1) {
+            return numbers.map((n) => `[source-${n}]`).join(" ");
+          }
+          if (numbers.length === 1 && !/source/i.test(trimmed)) {
+            return `[source-${numbers[0]}]`;
+          }
+        }
+        return fullMatch;
+      }
+    );
+
+    // 2. Regex splits by [source-N], [source:N], [source N]
+    const parts = normalizedText.split(/(\[source[-_:]?\s*\d+\])/gi);
 
     return parts.map((part, index) => {
       const match = part.match(/\[source[-_:]?\s*(\d+)\]/i);

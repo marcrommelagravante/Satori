@@ -180,6 +180,7 @@ export interface GenerateGroundedResponseOptions {
   userQuestion: string;
   context: string;
   conversationHistory?: ChatHistoryMessage[];
+  model?: string;
 }
 
 export interface GenerateGroundedResponseResult {
@@ -199,7 +200,8 @@ CITATION RULES:
 2. Cite sources immediately following the specific statement they support (e.g., "The equipment reimbursement is $500 per calendar year [source-1].").
 3. NEVER invent source numbers. Only cite sources that are explicitly provided in the <context> block.
 4. If the context does not contain enough information to answer the question, state: "I could not find enough information in this workspace to answer this question." Do not make up unsupported facts.
-5. Maintain a professional, clear, and direct tone.`;
+5. Maintain a professional, clear, and direct tone.
+6. When referencing multiple sources for a single statement, write them as separate brackets (e.g., [source-1] [source-2]), NEVER combined in one bracket like [source-1 source-2].`;
 
 /**
  * Deterministic fallback generator for offline tests or when API key is missing/quota-limited.
@@ -397,13 +399,14 @@ User Question: ${userQuestion}`;
   });
 
   const candidateModels = [
+    ...(options.model ? [options.model] : []),
     GENERATION_MODEL,
     FALLBACK_GENERATION_MODEL,
     "gemini-3.5-flash",
   ].filter((m, i, arr): m is string => Boolean(m) && arr.indexOf(m) === i);
 
   let activeStream: AsyncIterable<StreamChunkLike> | null = null;
-  let activeModel = GENERATION_MODEL;
+  let activeModel = candidateModels[0] || GENERATION_MODEL;
   let lastError: unknown = null;
 
   for (const modelToTry of candidateModels) {
