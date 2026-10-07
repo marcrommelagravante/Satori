@@ -21,6 +21,18 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+interface ReportSectionItem {
+  title: string;
+  content: string;
+}
+
+interface ComparisonMatrixItem {
+  topic: string;
+  documentA: string;
+  documentB: string;
+  importance?: "low" | "medium" | "high";
+}
+
 export default async function ReportDetailPage({
   params,
 }: {
@@ -220,7 +232,7 @@ export default async function ReportDetailPage({
 
             {/* Sections */}
             {Array.isArray(content.sections) &&
-              content.sections.map((section: any, idx: number) => (
+              content.sections.map((section: ReportSectionItem, idx: number) => (
                 <div
                   key={idx}
                   className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-3"
@@ -300,7 +312,7 @@ export default async function ReportDetailPage({
                       </thead>
                       <tbody className="divide-y divide-border">
                         {content.comparisonMatrix.map(
-                          (row: any, idx: number) => (
+                          (row: ComparisonMatrixItem, idx: number) => (
                             <tr
                               key={idx}
                               className="hover:bg-accent/20 transition-colors"

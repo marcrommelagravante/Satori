@@ -184,7 +184,9 @@ export function EvalCasesTable({
 
               <select
                 value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value as any)}
+                onChange={(e) =>
+                  setDifficulty(e.target.value as "easy" | "medium" | "hard")
+                }
                 className="rounded-md border border-input bg-card px-2 text-xs h-8 text-foreground"
               >
                 <option value="easy">Easy</option>

@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
-import { ArrowRight, Loader2, Paperclip } from "lucide-react";
+import { ArrowRight, Loader2, Paperclip, Square } from "lucide-react";
 
 interface MessageComposerProps {
   onSend: (content: string, agentMode?: boolean) => void;
   disabled?: boolean;
   placeholder?: string;
   agentMode?: boolean;
+  isStreaming?: boolean;
+  onStop?: () => void;
 }
 
 export function MessageComposer({
@@ -13,6 +15,8 @@ export function MessageComposer({
   disabled = false,
   placeholder = "Ask a question...",
   agentMode = false,
+  isStreaming = false,
+  onStop,
 }: MessageComposerProps) {
   const [content, setContent] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -88,20 +92,32 @@ export function MessageComposer({
           </span>
         )}
 
-        {/* Circular Send Button matching Image 1 */}
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={!content.trim() || disabled}
-          className="h-9 w-9 rounded-full bg-[#4F46E5] hover:bg-[#4338CA] text-white flex items-center justify-center transition-all shadow-xs shrink-0 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-          aria-label="Send message"
-        >
-          {disabled ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <ArrowRight className="h-4.5 w-4.5" />
-          )}
-        </button>
+        {/* Circular Send / Stop Button */}
+        {isStreaming && onStop ? (
+          <button
+            type="button"
+            onClick={onStop}
+            className="h-9 w-9 rounded-full bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white flex items-center justify-center transition-all shadow-xs shrink-0 cursor-pointer"
+            aria-label="Stop generating"
+            title="Stop generating"
+          >
+            <Square className="h-3.5 w-3.5 fill-current" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={!content.trim() || disabled}
+            className="h-9 w-9 rounded-full bg-[#4F46E5] hover:bg-[#4338CA] text-white flex items-center justify-center transition-all shadow-xs shrink-0 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            aria-label="Send message"
+          >
+            {disabled ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowRight className="h-4.5 w-4.5" />
+            )}
+          </button>
+        )}
       </div>
     </div>
   );

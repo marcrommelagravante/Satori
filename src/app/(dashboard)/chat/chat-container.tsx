@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { Conversation } from "@/lib/db/schema";
 import { MessageWithCitations, CitationDetail } from "@/lib/chat";
+import { type AgentToolCallLog } from "@/lib/ai/agent";
 import { ConversationList } from "./conversation-list";
 import { MessageThread } from "./message-thread";
 import { MessageComposer } from "./message-composer";
 import { CitationPanel } from "./citation-panel";
 import {
-  sendMessageAction,
   createConversationAction,
   deleteConversationAction,
   getConversationMessagesAction,
@@ -50,9 +50,11 @@ export function ChatContainer({
   const [messages, setMessages] =
     useState<MessageWithCitations[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [agentMode, setAgentMode] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Citation panel state
   const [activeCitations, setActiveCitations] = useState<CitationDetail[]>(() => {
@@ -147,6 +149,15 @@ export function ChatContainer({
     await deleteConversationAction(id, workspaceId);
   };
 
+  const handleStopGenerating = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsLoading(false);
+      setIsStreaming(false);
+    }
+  };
+
   const handleSendMessage = async (content: string, explicitAgentMode?: boolean) => {
     if (!content.trim() || isLoading) return;
     const isAgent = explicitAgentMode !== undefined ? explicitAgentMode : agentMode;
@@ -166,9 +177,9 @@ export function ChatContainer({
       }
     }
 
-    // Optimistic user message insertion
+    const tempUserMessageId = `temp-${Date.now()}`;
     const tempUserMessage: MessageWithCitations = {
-      id: `temp-${Date.now()}`,
+      id: tempUserMessageId,
       conversationId: targetConvId,
       role: "user",
       content,
@@ -176,86 +187,231 @@ export function ChatContainer({
       createdAt: new Date(),
     };
 
-    setMessages((prev) => [...prev, tempUserMessage]);
+    const tempAssistantId = `temp-assistant-${Date.now()}`;
+    const tempAssistantMessage: MessageWithCitations = {
+      id: tempAssistantId,
+      conversationId: targetConvId,
+      role: "assistant",
+      content: "",
+      model: null,
+      createdAt: new Date(),
+      citations: [],
+      toolCalls: [],
+      isAgent,
+    };
+
+    setMessages((prev) => [...prev, tempUserMessage, tempAssistantMessage]);
     setIsLoading(true);
+    setIsStreaming(true);
+
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
     try {
-      const res = await sendMessageAction({
-        conversationId: targetConvId,
-        workspaceId,
-        content,
-        agentMode: isAgent,
-      });
-
-      if (res.success && res.assistantMessage) {
-        const assistantWithCitations: MessageWithCitations = {
-          ...res.assistantMessage,
-          citations: res.citations || [],
-          toolCalls: res.toolCalls,
-          reportId: res.reportId,
-          isAgent: res.isAgent,
-        };
-
-        // Replace optimistic user message with real one from DB and add assistant message
-        setMessages((prev) => {
-          const filtered = prev.filter((m) => m.id !== tempUserMessage.id);
-          return [
-            ...filtered,
-            res.userMessage ? { ...res.userMessage, citations: [] } : tempUserMessage,
-            assistantWithCitations,
-          ];
-        });
-
-        // If citations were returned, set them and open panel
-        if (res.citations && res.citations.length > 0) {
-          setActiveCitations(res.citations);
-          setSelectedCitationId(res.citations[0].id);
-          setIsCitationPanelOpen(true);
+      const response = await fetch(
+        `/api/workspaces/${workspaceId}/chat/stream`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            conversationId: targetConvId,
+            content,
+            agentMode: isAgent,
+          }),
+          signal: abortController.signal,
         }
+      );
 
-        // Update conversation title in the list if this was the first turn
-        setConversations((prev) =>
-          prev.map((c) => {
-            if (c.id === targetConvId && c.title === "New Conversation") {
-              const preview = content.slice(0, 45);
-              return {
-                ...c,
-                title: preview + (content.length > 45 ? "..." : ""),
-                updatedAt: new Date(),
-              };
-            }
-            return c;
-          })
-        );
-      } else {
-        // Handle error message gracefully
-        const errorMsg: MessageWithCitations = {
-          id: `err-${Date.now()}`,
-          conversationId: targetConvId,
-          role: "assistant",
-          content:
-            res.error ||
-            "I encountered an issue generating an answer. Please try again or verify your documents are indexed.",
-          model: "error",
-          createdAt: new Date(),
-          citations: [],
-        };
-        setMessages((prev) => [...prev, errorMsg]);
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.error || `Error status ${response.status}`);
       }
-    } catch {
-      const errorMsg: MessageWithCitations = {
-        id: `err-${Date.now()}`,
-        conversationId: targetConvId,
-        role: "assistant",
-        content:
-          "Network error while communicating with AI service. Please check your connection and try again.",
-        model: "error",
-        createdAt: new Date(),
-        citations: [],
-      };
-      setMessages((prev) => [...prev, errorMsg]);
+
+      if (!response.body) {
+        throw new Error("No readable stream received from server.");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const blocks = buffer.split("\n\n");
+        buffer = blocks.pop() || "";
+
+        for (const block of blocks) {
+          if (!block.trim()) continue;
+          const eventMatch = block.match(/^event:\s*([^\n]+)/m);
+          const dataMatch = block.match(/^data:\s*([\s\S]+)$/m);
+
+          if (!dataMatch) continue;
+          const eventType = eventMatch ? eventMatch[1].trim() : "message";
+          let parsedData: {
+            userMessage?: MessageWithCitations;
+            sources?: CitationDetail[];
+            text?: string;
+            toolName?: string;
+            resultSummary?: string;
+            durationMs?: number;
+            assistantMessage?: MessageWithCitations;
+            citations?: CitationDetail[];
+            toolCalls?: AgentToolCallLog[];
+            reportId?: string;
+            isAgent?: boolean;
+            error?: string;
+          };
+          try {
+            parsedData = JSON.parse(dataMatch[1].trim());
+          } catch {
+            continue;
+          }
+
+          if (eventType === "user_message" && parsedData.userMessage) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === tempUserMessageId
+                  ? { ...parsedData.userMessage!, citations: [] }
+                  : m
+              )
+            );
+          } else if (eventType === "context" && Array.isArray(parsedData.sources)) {
+            if (parsedData.sources.length > 0) {
+              const upfrontSources: CitationDetail[] = parsedData.sources.map(
+                (s, idx) => ({
+                  id: s.id || `src-${idx + 1}`,
+                  chunkId: s.chunkId,
+                  relevanceScore: s.relevanceScore,
+                  rank: idx + 1,
+                  documentId: s.documentId,
+                  documentName: s.documentName,
+                  pageNumber: s.pageNumber,
+                  section: s.section,
+                  contentSnippet: s.contentSnippet,
+                })
+              );
+              setActiveCitations(upfrontSources);
+            }
+          } else if (eventType === "token" && typeof parsedData.text === "string") {
+            const tokenText = parsedData.text;
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === tempAssistantId
+                  ? { ...m, content: m.content + tokenText }
+                  : m
+              )
+            );
+          } else if (eventType === "tool_start") {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === tempAssistantId
+                  ? {
+                      ...m,
+                      toolCalls: [
+                        ...(m.toolCalls || []),
+                        {
+                          toolName: parsedData.toolName || "Agent Tool",
+                          args: {},
+                          resultSummary: "Running...",
+                          durationMs: 0,
+                          success: true,
+                        },
+                      ],
+                    }
+                  : m
+              )
+            );
+          } else if (eventType === "tool_done") {
+            setMessages((prev) =>
+              prev.map((m) => {
+                if (m.id !== tempAssistantId) return m;
+                const toolCalls = [...(m.toolCalls || [])];
+                const match = toolCalls.find(
+                  (t) => t.toolName === parsedData.toolName
+                );
+                if (match) {
+                  match.resultSummary = parsedData.resultSummary || "Done";
+                  match.durationMs = parsedData.durationMs || 0;
+                }
+                return { ...m, toolCalls };
+              })
+            );
+          } else if (eventType === "done") {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === tempAssistantId
+                  ? {
+                      ...m,
+                      ...(parsedData.assistantMessage || {}),
+                      citations: parsedData.citations || [],
+                      toolCalls: parsedData.toolCalls || m.toolCalls,
+                      reportId: parsedData.reportId,
+                      isAgent: parsedData.isAgent ?? m.isAgent,
+                    }
+                  : m
+              )
+            );
+
+            if (parsedData.citations && parsedData.citations.length > 0) {
+              setActiveCitations(parsedData.citations);
+              setSelectedCitationId(parsedData.citations[0].id);
+              setIsCitationPanelOpen(true);
+            }
+
+            setConversations((prev) =>
+              prev.map((c) => {
+                if (c.id === targetConvId && c.title === "New Conversation") {
+                  const preview = content.slice(0, 45);
+                  return {
+                    ...c,
+                    title: preview + (content.length > 45 ? "..." : ""),
+                    updatedAt: new Date(),
+                  };
+                }
+                return c;
+              })
+            );
+          } else if (eventType === "error") {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === tempAssistantId
+                  ? {
+                      ...m,
+                      content:
+                        (m.content ? m.content + "\n\n" : "") +
+                        `⚠️ ${parsedData.error || "Generation error. Please retry."}`,
+                    }
+                  : m
+              )
+            );
+          }
+        }
+      }
+    } catch (err: unknown) {
+      if ((err as Error)?.name === "AbortError") {
+        return;
+      }
+      const errMsg =
+        err instanceof Error ? err.message : "Failed to connect to chat service";
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempAssistantId
+            ? {
+                ...m,
+                content:
+                  (m.content ? m.content + "\n\n" : "") +
+                  `⚠️ [Connection error: ${errMsg}. Please try again.]`,
+              }
+            : m
+        )
+      );
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -352,8 +508,10 @@ export function ChatContainer({
         {/* Floating Pill Composer */}
         <MessageComposer
           onSend={handleSendMessage}
-          disabled={isLoading}
+          disabled={isLoading && !isStreaming}
           agentMode={agentMode}
+          isStreaming={isStreaming}
+          onStop={handleStopGenerating}
         />
       </div>
 

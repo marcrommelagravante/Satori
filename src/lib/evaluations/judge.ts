@@ -83,7 +83,10 @@ export async function evaluateWithJudge(params: {
     return evaluateWithFallback(params);
   }
 
-  const modelName = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+  const modelName =
+    process.env.GEMINI_GENERATION_MODEL ||
+    process.env.GEMINI_MODEL ||
+    "gemini-3.6-flash";
 
   try {
     const prompt = `Evaluate the following RAG output:
@@ -102,7 +105,7 @@ ${generatedAnswer}
 
 Return your JSON evaluation now:`;
 
-    const response = await client.models.generateContent({
+    const callPromise = client.models.generateContent({
       model: modelName,
       contents: prompt,
       config: {
@@ -111,6 +114,12 @@ Return your JSON evaluation now:`;
         responseMimeType: "application/json",
       },
     });
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Judge LLM call timed out after 15s")), 15000)
+    );
+
+    const response = await Promise.race([callPromise, timeoutPromise]);
 
     const responseText = response.text || "";
     const parsedJson = JSON.parse(responseText);

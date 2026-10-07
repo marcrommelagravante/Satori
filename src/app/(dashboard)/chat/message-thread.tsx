@@ -166,7 +166,7 @@ export function MessageThread({
       )}
 
       {/* Message List */}
-      {messages.map((msg) => {
+      {messages.map((msg, idx) => {
         const isUser = msg.role === "user";
 
         return (
@@ -241,7 +241,12 @@ export function MessageThread({
                 {isUser ? (
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                 ) : (
-                  <div>{renderMessageContent(msg.content, msg.citations)}</div>
+                  <div>
+                    {renderMessageContent(msg.content, msg.citations)}
+                    {isLoading && idx === messages.length - 1 && (
+                      <span className="inline-block w-1.5 h-3.5 ml-1 bg-[#4F46E5] dark:bg-violet-400 animate-pulse align-middle rounded-xs" />
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -306,8 +311,8 @@ export function MessageThread({
         );
       })}
 
-      {/* Loading Skeleton */}
-      {isLoading && (
+      {/* Loading Skeleton before first tokens arrive */}
+      {isLoading && (!messages[messages.length - 1] || messages[messages.length - 1].role === "user" || messages[messages.length - 1].content.length === 0) && (
         <div className="flex items-start gap-3">
           <div className="h-8 w-8 rounded-xl bg-secondary text-secondary-foreground flex items-center justify-center shrink-0 shadow-2xs">
             <Sparkles className="h-4 w-4 animate-spin" />

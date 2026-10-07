@@ -335,3 +335,147 @@ User Question: ${userQuestion}`;
   );
   return generateFallbackGroundedResponse(options);
 }
+
+export interface GroundedStreamResult {
+  fullText: string;
+  model: string;
+  promptTokens: number;
+  outputTokens: number;
+}
+
+interface StreamChunkLike {
+  text?: string | null;
+}
+
+/**
+ * Streams a grounded response from Gemini models chunk-by-chunk.
+ * Supports transparent fallback to backup models if primary model fails on initiation.
+ */
+export async function* generateGroundedResponseStream(
+  options: GenerateGroundedResponseOptions
+): AsyncGenerator<string, GroundedStreamResult, void> {
+  const client = getGenAIClient();
+  if (!client) {
+    const fallback = generateFallbackGroundedResponse(options);
+    const words = fallback.text.split(/(\s+)/);
+    for (const w of words) {
+      if (w) yield w;
+    }
+    return {
+      fullText: fallback.text,
+      model: fallback.model,
+      promptTokens: fallback.promptTokens,
+      outputTokens: fallback.outputTokens,
+    };
+  }
+
+  const {
+    systemPrompt = DEFAULT_SYSTEM_INSTRUCTION,
+    userQuestion,
+    context,
+    conversationHistory = [],
+  } = options;
+
+  const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
+
+  for (const turn of conversationHistory.slice(-6)) {
+    contents.push({
+      role: turn.role === "assistant" ? "model" : "user",
+      parts: [{ text: turn.content }],
+    });
+  }
+
+  const userContent = `Here is the relevant workspace documentation context:
+
+${context}
+
+User Question: ${userQuestion}`;
+
+  contents.push({
+    role: "user",
+    parts: [{ text: userContent }],
+  });
+
+  const candidateModels = [
+    GENERATION_MODEL,
+    FALLBACK_GENERATION_MODEL,
+    "gemini-3.5-flash",
+  ].filter((m, i, arr): m is string => Boolean(m) && arr.indexOf(m) === i);
+
+  let activeStream: AsyncIterable<StreamChunkLike> | null = null;
+  let activeModel = GENERATION_MODEL;
+  let lastError: unknown = null;
+
+  for (const modelToTry of candidateModels) {
+    try {
+      activeStream = (await client.models.generateContentStream({
+        model: modelToTry,
+        contents,
+        config: {
+          systemInstruction: systemPrompt,
+          temperature: 0.2,
+        },
+      })) as AsyncIterable<StreamChunkLike>;
+      activeModel = modelToTry;
+      break;
+    } catch (err) {
+      lastError = err;
+      console.warn(
+        `[Gemini Stream] Model ${modelToTry} stream failed on init:`,
+        err instanceof Error ? err.message : err
+      );
+    }
+  }
+
+  if (!activeStream) {
+    console.warn(
+      "[Gemini Stream] All models failed on init, using fallback generator:",
+      lastError
+    );
+    const fallback = generateFallbackGroundedResponse(options);
+    const words = fallback.text.split(/(\s+)/);
+    for (const w of words) {
+      if (w) yield w;
+    }
+    return {
+      fullText: fallback.text,
+      model: fallback.model,
+      promptTokens: fallback.promptTokens,
+      outputTokens: fallback.outputTokens,
+    };
+  }
+
+  let fullText = "";
+  try {
+    for await (const chunk of activeStream) {
+      const textChunk = chunk.text || "";
+      if (textChunk) {
+        fullText += textChunk;
+        yield textChunk;
+      }
+    }
+  } catch (streamIterErr) {
+    console.warn("[Gemini Stream] Error during stream iteration:", streamIterErr);
+    if (!fullText) {
+      const fallback = generateFallbackGroundedResponse(options);
+      yield fallback.text;
+      return {
+        fullText: fallback.text,
+        model: "satori-fallback-local",
+        promptTokens: fallback.promptTokens,
+        outputTokens: fallback.outputTokens,
+      };
+    }
+  }
+
+  const promptTokens = Math.ceil(userContent.length / 4);
+  const outputTokens = Math.ceil(fullText.length / 4);
+
+  return {
+    fullText: fullText.trim(),
+    model: activeModel,
+    promptTokens,
+    outputTokens,
+  };
+}
+

@@ -351,10 +351,11 @@ async function verifyAllUssgFunctions() {
 
   console.log(`✓ Evaluation Run completed: Run ID: ${evalResult.run.id}`);
   console.log(`  - Total Cases: ${evalResult.run.totalCases}`);
-  console.log(`  - Passed Cases: ${(evalResult.run as any).passedCases}`);
-  console.log(`  - Average Groundedness Score: ${((evalResult.run as any).avgGroundedness || 0).toFixed(2)}`);
-  console.log(`  - Average Correctness Score: ${((evalResult.run as any).avgCorrectness || 0).toFixed(2)}`);
-  console.log(`  - Retrieval Recall: ${(((evalResult.run as any).avgRetrievalRecall || 0) * 100).toFixed(1)}%`);
+  const passedCount = evalResult.results.filter((r) => r.status === "passed").length;
+  console.log(`  - Passed Cases: ${passedCount}`);
+  console.log(`  - Average Groundedness Score: ${(evalResult.run.groundednessScore ?? 0).toFixed(2)}`);
+  console.log(`  - Average Correctness Score: ${(evalResult.run.answerCorrectness ?? 0).toFixed(2)}`);
+  console.log(`  - Retrieval Recall: ${((evalResult.run.retrievalRecallK ?? 0) * 100).toFixed(1)}%`);
 
   console.log("✓ Module 7 Passed: Automated evaluation framework benchmarks retrieval and answer correctness.\n");
 

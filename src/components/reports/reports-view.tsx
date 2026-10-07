@@ -44,7 +44,6 @@ interface ReportsViewProps {
 export function ReportsView({
   reports,
   workspaceId,
-  documentNamesMap: _documentNamesMap,
   availableDocuments = [],
 }: ReportsViewProps) {
   const router = useRouter();
@@ -71,12 +70,12 @@ export function ReportsView({
   const [customPrompt, setCustomPrompt] = React.useState("");
   const [generateError, setGenerateError] = React.useState<string | null>(null);
 
-  // Pre-select documents when opening modal if none selected yet
-  React.useEffect(() => {
-    if (isGenerateModalOpen && selectedDocIds.length === 0 && availableDocuments.length > 0) {
+  const handleOpenGenerateModal = () => {
+    setIsGenerateModalOpen(true);
+    if (selectedDocIds.length === 0 && availableDocuments.length > 0) {
       setSelectedDocIds(availableDocuments.map((d) => d.id));
     }
-  }, [isGenerateModalOpen, availableDocuments]);
+  };
 
   // Close three-dots menu when clicking outside
   React.useEffect(() => {
@@ -114,10 +113,9 @@ export function ReportsView({
     (r) => getReportCategory(r) === "analysis"
   ).length;
 
-  // Real recent reports created in the last 7 days
-  const sevenDaysAgo = React.useMemo(
-    () => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    []
+  // Real recent reports created in the last 7 days (initialized once on mount)
+  const [sevenDaysAgo] = React.useState(
+    () => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   );
   const newReportsCount = React.useMemo(
     () => reports.filter((r) => new Date(r.createdAt) > sevenDaysAgo).length,
@@ -261,7 +259,7 @@ export function ReportsView({
         <div>
           <button
             type="button"
-            onClick={() => setIsGenerateModalOpen(true)}
+            onClick={handleOpenGenerateModal}
             className="rounded-xl sm:rounded-2xl bg-[#4F46E5] hover:bg-[#4338CA] text-white font-semibold text-xs md:text-sm px-5 py-2.5 shadow-xs flex items-center gap-2 transition-all cursor-pointer"
           >
             <Sparkles className="h-4 w-4" />
@@ -401,7 +399,11 @@ export function ReportsView({
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setSelectedFilter(tab.id as any)}
+                  onClick={() =>
+                    setSelectedFilter(
+                      tab.id as "all" | "summary" | "comparison" | "analysis"
+                    )
+                  }
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                     selectedFilter === tab.id
                       ? "bg-[#4F46E5] text-white shadow-xs"
@@ -452,7 +454,7 @@ export function ReportsView({
                     </Link>
                     <button
                       type="button"
-                      onClick={() => setIsGenerateModalOpen(true)}
+                      onClick={handleOpenGenerateModal}
                       className="rounded-xl border border-slate-200 dark:border-border bg-slate-50 hover:bg-slate-100 dark:bg-muted/40 dark:hover:bg-muted text-slate-700 dark:text-slate-200 font-semibold text-xs sm:text-sm px-4.5 py-2.5 shadow-2xs flex items-center gap-2 transition-all cursor-pointer"
                     >
                       <span>Generate Report</span>
@@ -461,7 +463,7 @@ export function ReportsView({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setIsGenerateModalOpen(true)}
+                    onClick={handleOpenGenerateModal}
                     className="rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white font-semibold text-xs sm:text-sm px-5 py-2.5 shadow-xs flex items-center gap-2 transition-all cursor-pointer"
                   >
                     <Sparkles className="h-4 w-4" />

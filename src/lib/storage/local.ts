@@ -5,7 +5,7 @@ export class LocalStorageAdapter {
   private baseDir: string;
 
   constructor(dirName: string = ".storage") {
-    this.baseDir = path.join(process.cwd(), /*turbopackIgnore: true*/ dirName);
+    this.baseDir = path.join(/*turbopackIgnore: true*/ process.cwd(), dirName);
   }
 
   private async ensureBaseDir() {

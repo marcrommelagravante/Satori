@@ -93,7 +93,10 @@ export async function generateBenchmarkCases(
       const prompt = `Generate ${targetCount} benchmark evaluation questions from these document chunks:\n\n${chunksText}`;
 
       const response = await client.models.generateContent({
-        model: process.env.GEMINI_MODEL || "gemini-3.8-flash",
+        model:
+          process.env.GEMINI_GENERATION_MODEL ||
+          process.env.GEMINI_MODEL ||
+          "gemini-3.6-flash",
         contents: prompt,
         config: {
           systemInstruction: GENERATOR_SYSTEM_PROMPT,

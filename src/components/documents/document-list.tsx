@@ -95,10 +95,20 @@ export function DocumentList({
     return filtered.slice(start, start + itemsPerPage);
   }, [filtered, currentPage, itemsPerPage]);
 
-  // Reset page when filter changes
-  React.useEffect(() => {
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
     setCurrentPage(1);
-  }, [search, typeFilter, statusFilter]);
+  };
+
+  const handleTypeFilterChange = (val: string) => {
+    setTypeFilter(val);
+    setCurrentPage(1);
+  };
+
+  const handleStatusFilterChange = (val: string) => {
+    setStatusFilter(val);
+    setCurrentPage(1);
+  };
 
   const toggleSelectAll = () => {
     if (selectedIds.size === paginatedDocs.length && paginatedDocs.length > 0) {
@@ -194,7 +204,7 @@ export function DocumentList({
             type="text"
             placeholder="Search documents by name, type, or content..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="w-full h-10 pl-10 pr-4 text-xs rounded-xl bg-white dark:bg-card border border-slate-200/80 dark:border-border/80 text-slate-800 dark:text-foreground placeholder:text-slate-400 dark:placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-[#4F46E5] shadow-2xs transition-all"
           />
         </div>
@@ -205,7 +215,7 @@ export function DocumentList({
           <div className="relative inline-block">
             <select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
+              onChange={(e) => handleTypeFilterChange(e.target.value)}
               className="h-10 pl-3.5 pr-8 rounded-xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#4F46E5] shadow-2xs cursor-pointer appearance-none"
             >
               <option value="all">All Types</option>
@@ -220,7 +230,7 @@ export function DocumentList({
           <div className="relative inline-block">
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => handleStatusFilterChange(e.target.value)}
               className="h-10 pl-3.5 pr-8 rounded-xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#4F46E5] shadow-2xs cursor-pointer appearance-none"
             >
               <option value="all">All Status</option>

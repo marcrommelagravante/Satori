@@ -384,22 +384,89 @@ export async function sendMessage(
   }
   const latencyMs = Date.now() - startTime;
 
-  // 7. Persist assistant message
+  // 7-10. Persist assistant message, inline citations, aiRuns, and auto-title
+  const { assistantMessage, citations: savedCitations } =
+    await finalizeAndSaveAssistantMessage({
+      conversationId,
+      workspaceId,
+      userId,
+      userText,
+      assistantText: generationResult.text,
+      model: generationResult.model,
+      ragContext,
+      latencyMs,
+      promptTokens: generationResult.promptTokens,
+      outputTokens: generationResult.outputTokens,
+      error: generationError,
+    });
+
+  return {
+    userMessage,
+    assistantMessage,
+    citations: savedCitations,
+    citationMap: ragContext.citationMap,
+    latencyMs,
+  };
+}
+
+export interface FinalizeAssistantMessageOptions {
+  conversationId: string;
+  workspaceId: string;
+  userId: string;
+  userText: string;
+  assistantText: string;
+  model: string;
+  ragContext: {
+    includedChunks: Array<{ similarityScore: number }>;
+    citationMap: Record<string, SourceAttribution>;
+  };
+  latencyMs: number;
+  promptTokens: number;
+  outputTokens: number;
+  error?: string | null;
+}
+
+/**
+ * Persists an assistant message to the database, extracts [source-N] inline citations,
+ * logs aiRuns observability, and automatically titles the conversation on the first turn.
+ * Shared between synchronous Server Actions and the SSE streaming endpoint.
+ */
+export async function finalizeAndSaveAssistantMessage(
+  options: FinalizeAssistantMessageOptions
+): Promise<{
+  assistantMessage: Message;
+  citations: CitationDetail[];
+}> {
+  const {
+    conversationId,
+    workspaceId,
+    userId,
+    userText,
+    assistantText,
+    model,
+    ragContext,
+    latencyMs,
+    promptTokens,
+    outputTokens,
+    error,
+  } = options;
+
+  // 1. Persist assistant message
   const [assistantMessage] = await db
     .insert(messages)
     .values({
       conversationId,
       role: "assistant",
-      content: generationResult.text,
-      model: generationResult.model,
+      content: assistantText,
+      model,
     })
     .returning();
 
-  // 8. Post-process inline citations: detect [source-N] references
+  // 2. Post-process inline citations: detect [source-N] references
   const matchedSourceIds = new Set<string>();
   const citationRegex = /\[source[-_:]?\s*(\d+)\]/gi;
   let match;
-  while ((match = citationRegex.exec(generationResult.text)) !== null) {
+  while ((match = citationRegex.exec(assistantText)) !== null) {
     matchedSourceIds.add(`source-${match[1]}`);
   }
 
@@ -408,7 +475,7 @@ export async function sendMessage(
   if (
     matchedSourceIds.size === 0 &&
     ragContext.includedChunks.length > 0 &&
-    !generationResult.text.includes("could not find enough information") &&
+    !assistantText.includes("could not find enough information") &&
     ragContext.includedChunks[0].similarityScore >= 0.65
   ) {
     matchedSourceIds.add("source-1");
@@ -445,26 +512,32 @@ export async function sendMessage(
     }
   }
 
-  // 9. Record AI run observability
+  // 3. Record AI run observability
   try {
     await db.insert(aiRuns).values({
       workspaceId,
       userId,
       conversationId,
-      model: generationResult.model,
+      model,
       operation: "chat_grounded_generation",
       latencyMs,
-      inputTokens: generationResult.promptTokens,
-      outputTokens: generationResult.outputTokens,
-      status: generationError ? "failed" : "success",
-      errorCode: generationError,
+      inputTokens: promptTokens,
+      outputTokens,
+      status: error ? "failed" : "success",
+      errorCode: error,
     });
   } catch (logErr) {
     console.warn("Failed to write ai_runs record:", logErr);
   }
 
-  // 10. Auto-title conversation if this is the first turn
-  if (conv.title === "New Conversation" || conv.title.trim() === "") {
+  // 4. Auto-title conversation if this is the first turn
+  const [conv] = await db
+    .select({ title: conversations.title })
+    .from(conversations)
+    .where(eq(conversations.id, conversationId))
+    .limit(1);
+
+  if (conv && (conv.title === "New Conversation" || conv.title.trim() === "")) {
     let newTitle = userText.replace(/[#*`]/g, "").trim();
     if (newTitle.length > 50) {
       newTitle = newTitle.slice(0, 47) + "...";
@@ -479,10 +552,7 @@ export async function sendMessage(
   }
 
   return {
-    userMessage,
     assistantMessage,
     citations: savedCitations,
-    citationMap: ragContext.citationMap,
-    latencyMs,
   };
 }

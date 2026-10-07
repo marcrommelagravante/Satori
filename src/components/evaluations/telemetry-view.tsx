@@ -18,6 +18,7 @@ import {
   BarChart2,
 } from "lucide-react";
 import type { TelemetrySummary } from "@/lib/observability";
+import type { AgentToolCallLog } from "@/lib/ai/agent";
 
 interface TelemetryViewProps {
   telemetry: TelemetrySummary | null;
@@ -275,7 +276,7 @@ export function TelemetryView({ telemetry }: TelemetryViewProps) {
                           Tool Execution Chain:
                         </div>
                         <div className="space-y-1.5">
-                          {toolCalls.map((tc: any, i: number) => (
+                          {toolCalls.map((tc: AgentToolCallLog, i: number) => (
                             <div
                               key={i}
                               className="p-2 rounded bg-card border border-border flex items-center justify-between text-[11px]"
