@@ -42,7 +42,7 @@ export function WorkspaceShowcase({ user }: WorkspaceShowcaseProps) {
               {user ? (
                 <Link
                   href="/dashboard"
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#4F46E5] dark:text-indigo-400 hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#0F2D4A] dark:text-white hover:underline"
                 >
                   <span>Launch app</span>
                   <ExternalLink className="h-3 w-3" />
@@ -50,7 +50,7 @@ export function WorkspaceShowcase({ user }: WorkspaceShowcaseProps) {
               ) : (
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#4F46E5] dark:text-indigo-400 hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#0F2D4A] dark:text-white hover:underline"
                 >
                   <span>Sign in</span>
                   <ExternalLink className="h-3 w-3" />
@@ -65,7 +65,7 @@ export function WorkspaceShowcase({ user }: WorkspaceShowcaseProps) {
             <div className="w-full md:w-56 p-4 border-b md:border-b-0 md:border-r border-slate-100 dark:border-border/60 bg-slate-50/50 dark:bg-muted/10 flex flex-col justify-between shrink-0">
               <div className="space-y-4">
                 <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl bg-white dark:bg-card border border-slate-200/60 dark:border-border/60">
-                  <div className="h-6 w-6 rounded-lg bg-[#EEF2FF] dark:bg-indigo-950/60 text-[#4F46E5] dark:text-indigo-400 flex items-center justify-center shrink-0">
+                  <div className="h-6 w-6 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#0F2D4A] dark:text-white flex items-center justify-center shrink-0">
                     <Building2 className="h-3.5 w-3.5" />
                   </div>
                   <span className="text-xs font-bold text-slate-800 dark:text-foreground truncate">
@@ -80,7 +80,7 @@ export function WorkspaceShowcase({ user }: WorkspaceShowcaseProps) {
                   <div className="px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-muted/40">
                     Documents (18)
                   </div>
-                  <div className="px-3 py-2 rounded-xl text-xs font-semibold bg-[#EEF2FF] dark:bg-indigo-950/50 text-[#4F46E5] dark:text-indigo-400">
+                  <div className="px-3 py-2 rounded-xl text-xs font-semibold bg-[#0F2D4A] text-white dark:bg-white dark:text-[#0F2D4A]">
                     AI Chat & Research
                   </div>
                   <div className="px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-muted/40">
@@ -113,12 +113,12 @@ export function WorkspaceShowcase({ user }: WorkspaceShowcaseProps) {
 
                 {/* Satori AI Response */}
                 <div className="flex items-start gap-3">
-                  <div className="h-7 w-7 rounded-full bg-[#7C3AED] text-white flex items-center justify-center shrink-0">
-                    <Sparkles className="h-3.5 w-3.5" />
+                  <div className="h-7 w-7 rounded-full bg-[#0F2D4A] text-white flex items-center justify-center shrink-0">
+                    <Sparkles className="h-3.5 w-3.5 text-blue-300" />
                   </div>
-                  <div className="flex-1 rounded-2xl border border-purple-200/80 dark:border-purple-900/60 bg-[#F5F3FF]/70 dark:bg-[#1E1B4B]/30 p-4 border-l-3 border-l-[#7C3AED] space-y-3">
+                  <div className="flex-1 rounded-2xl border border-slate-200 dark:border-slate-800 bg-[#F5F7FA] dark:bg-slate-900/40 p-4 border-l-4 border-l-[#0F2D4A] dark:border-l-white space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-heading text-xs font-bold text-[#7C3AED] dark:text-purple-400">
+                      <span className="font-heading text-xs font-bold text-[#0F2D4A] dark:text-white">
                         Satori AI Synthesis
                       </span>
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
@@ -131,11 +131,11 @@ export function WorkspaceShowcase({ user }: WorkspaceShowcaseProps) {
                       Under the 2024 bylaws, trustees were permitted thirty calendar days following year-end to file annual financial disclosures [1]. The 2025 governance amendments shorten this timeline to fourteen calendar days and mandate immediate disclosure prior to any board transaction exceeding $5,000 [2].
                     </p>
 
-                    <div className="pt-2 border-t border-purple-100 dark:border-purple-900/40 flex flex-wrap gap-2">
-                      <span className="inline-flex items-center gap-1 text-[10.5px] font-mono px-2 py-0.5 rounded bg-white dark:bg-card border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300">
+                    <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-1 text-[10.5px] font-mono px-2 py-0.5 rounded bg-white dark:bg-card border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                         [1] Bylaws_2024.pdf · p.12
                       </span>
-                      <span className="inline-flex items-center gap-1 text-[10.5px] font-mono px-2 py-0.5 rounded bg-white dark:bg-card border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300">
+                      <span className="inline-flex items-center gap-1 text-[10.5px] font-mono px-2 py-0.5 rounded bg-white dark:bg-card border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                         [2] Amendments_2025.docx · §3.4
                       </span>
                     </div>
@@ -149,7 +149,7 @@ export function WorkspaceShowcase({ user }: WorkspaceShowcaseProps) {
                   <MessageSquare className="h-4 w-4" />
                   <span>Ask questions, compare documents, or request synthesis...</span>
                 </div>
-                <span className="px-2.5 py-1 rounded-lg bg-[#4F46E5] text-white font-semibold text-[11px]">
+                <span className="px-3 py-1.5 rounded-lg bg-[#0F2D4A] hover:bg-[#18395B] dark:bg-white dark:text-[#0F2D4A] text-white font-semibold text-[11px] transition-colors cursor-pointer">
                   Send
                 </span>
               </div>

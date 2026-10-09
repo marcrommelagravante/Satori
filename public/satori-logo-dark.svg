@@ -1,0 +1,11 @@
+<svg width="420" height="140" viewBox="0 0 420 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Satori Mark -->
+  <g transform="translate(10, 10) scale(0.916)">
+    <path d="M0 36L83 0V28L0 64V36Z" fill="#FFFFFF"/>
+    <path d="M48 54L83 69V95L0 131V103L50 86L16 70L48 54Z" fill="#FFFFFF"/>
+  </g>
+  <!-- Satori Wordmark -->
+  <text x="110" y="78" font-family="DM Sans, system-ui, sans-serif" font-size="64" font-weight="700" letter-spacing="-1.5" fill="#FFFFFF">Satori</text>
+  <!-- Tagline -->
+  <text x="112" y="106" font-family="DM Sans, system-ui, sans-serif" font-size="16" font-weight="400" fill="#94A3B8">Your knowledge, intelligently connected.</text>
+</svg>

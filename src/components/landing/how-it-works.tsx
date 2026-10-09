@@ -1,41 +1,44 @@
 import * as React from "react";
-import { Upload, Cpu, MessageSquareQuote } from "lucide-react";
+import { Upload, Search, FileCheck2 } from "lucide-react";
 
 export function HowItWorks() {
   const steps = [
     {
+      stepNumber: "01",
       title: "Add your documents",
       description:
-        "Upload PDF, DOCX, and TXT files directly to your isolated workspace without configuring complex databases.",
+        "Upload PDF, DOCX, and TXT files directly to your private workspace. Files are validated, parsed, and indexed automatically.",
       icon: Upload,
-      detail: "Automatic validation & sanitization",
+      detail: "PDF, DOCX, and TXT supported",
     },
     {
-      title: "Index and vectorize",
+      stepNumber: "02",
+      title: "Ask a question",
       description:
-        "Satori extracts clean text, splits content into semantically coherent chunks, and indexes embeddings with pgvector.",
-      icon: Cpu,
-      detail: "768-dim embeddings + full-text vectors",
+        "Use natural language to find information across one file or your entire repository. Satori analyzes relevant passages in context.",
+      icon: Search,
+      detail: "Cross-document semantic search",
     },
     {
-      title: "Ask and discover",
+      stepNumber: "03",
+      title: "Inspect the source",
       description:
-        "Ask natural-language questions across your repository. Every answer cites exact documents, sections, and page numbers.",
-      icon: MessageSquareQuote,
-      detail: "Reciprocal Rank Fusion hybrid retrieval",
+        "Every response includes numbered citations. Click any citation chip to review the exact paragraph and page behind the answer.",
+      icon: FileCheck2,
+      detail: "Passage provenance & verification",
     },
   ];
 
   return (
     <section id="how-it-works" className="py-16 sm:py-24 border-t border-slate-200/60 dark:border-border/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Heading (Stacked, no split-header) */}
+        {/* Section Heading */}
         <div className="max-w-2xl mx-auto text-center space-y-3 mb-16">
           <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 dark:text-foreground">
             How Satori connects your information
           </h2>
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300">
-            From raw files to verified intelligence in three automated stages.
+            From raw documents to verified answers in three straightforward steps.
           </p>
         </div>
 
@@ -49,11 +52,16 @@ export function HowItWorks() {
             return (
               <div
                 key={step.title}
-                className="relative z-10 flex flex-col items-center text-center p-6 rounded-2xl border border-slate-200/70 dark:border-border/70 bg-white/70 dark:bg-card/70 backdrop-blur-xs shadow-xs hover:border-indigo-300 dark:hover:border-indigo-800/60 transition-all group"
+                className="relative z-10 flex flex-col items-center text-center p-6 sm:p-7 rounded-2xl border border-slate-200/80 dark:border-border/80 bg-white/80 dark:bg-card/80 backdrop-blur-xs shadow-xs hover:border-[#0F2D4A]/40 dark:hover:border-slate-700 transition-all group"
               >
-                {/* Step Icon Badge */}
-                <div className="h-14 w-14 rounded-2xl bg-[#EEF2FF] dark:bg-indigo-950/60 text-[#4F46E5] dark:text-indigo-400 flex items-center justify-center mb-5 shadow-2xs group-hover:scale-105 transition-transform">
-                  <Icon className="h-6 w-6" />
+                {/* Step Number & Icon Badge */}
+                <div className="relative mb-5">
+                  <div className="h-14 w-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-[#0F2D4A] dark:text-slate-100 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
+                    <Icon className="h-6 w-6 text-[#0F2D4A] dark:text-white" />
+                  </div>
+                  <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded-full bg-[#0F2D4A] dark:bg-white text-white dark:text-[#0F2D4A] font-mono text-[10px] font-bold">
+                    {step.stepNumber}
+                  </span>
                 </div>
 
                 {/* Step Title */}
@@ -66,9 +74,9 @@ export function HowItWorks() {
                   {step.description}
                 </p>
 
-                {/* Technical Footnote Badge */}
+                {/* Footnote Badge */}
                 <div className="mt-auto pt-3 border-t border-slate-100 dark:border-border/60 w-full">
-                  <span className="font-mono text-[10.5px] font-semibold text-slate-500 dark:text-muted-foreground">
+                  <span className="font-mono text-[11px] font-semibold text-slate-500 dark:text-muted-foreground">
                     {step.detail}
                   </span>
                 </div>

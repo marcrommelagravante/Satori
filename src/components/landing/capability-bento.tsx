@@ -3,7 +3,7 @@ import { Search, Sparkles, BookmarkCheck, GitCompare, FileText, Check } from "lu
 
 export function CapabilityBento() {
   return (
-    <section id="capabilities" className="py-16 sm:py-24 border-t border-slate-200/60 dark:border-border/60">
+    <section id="capabilities" className="py-16 sm:py-24 border-t border-slate-200/60 dark:border-border/60 scroll-mt-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Heading */}
         <div className="max-w-2xl mx-auto text-center space-y-3 mb-14">
@@ -11,7 +11,7 @@ export function CapabilityBento() {
             Core platform capabilities
           </h2>
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300">
-            Engineered for precision, document grounding, and cross-source synthesis.
+            Engineered for document grounding, verifiable citations, and cross-source synthesis.
           </p>
         </div>
 
@@ -20,26 +20,26 @@ export function CapabilityBento() {
           {/* Bento Cell 1: Universal Search (col-span-7) */}
           <div className="md:col-span-7 rounded-3xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card p-6 sm:p-8 shadow-xs flex flex-col justify-between overflow-hidden relative group">
             <div className="space-y-2 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-[#EEF2FF] dark:bg-indigo-950/60 text-[#4F46E5] dark:text-indigo-400 flex items-center justify-center mb-3">
+              <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-[#0F2D4A] dark:text-white flex items-center justify-center mb-3">
                 <Search className="h-5 w-5" />
               </div>
               <h3 className="font-heading text-xl font-bold text-slate-900 dark:text-foreground">
-                Universal Knowledge Search
+                Universal Document Search
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-md">
-                Search your entire organizational archive with natural language. Combines pgvector semantic similarity and PostgreSQL full-text search with Reciprocal Rank Fusion.
+                Search your entire organizational library in plain language. Blends semantic understanding with precise keyword matching to find the exact paragraph.
               </p>
             </div>
 
-            {/* Embedded Visual: Search Interface with RRF Matches */}
+            {/* Embedded Visual: Search Interface with Matches */}
             <div className="rounded-xl border border-slate-200/70 dark:border-border/70 bg-slate-50/70 dark:bg-muted/30 p-3.5 space-y-2.5">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white dark:bg-card border border-slate-200/60 dark:border-border/60 text-xs">
                 <Search className="h-3.5 w-3.5 text-slate-400" />
                 <span className="text-slate-800 dark:text-slate-200 font-medium">
                   board member compensation and conflicts of interest
                 </span>
-                <span className="ml-auto font-mono text-[9px] bg-indigo-50 dark:bg-indigo-950/50 text-[#4F46E5] dark:text-indigo-400 px-1.5 py-0.5 rounded font-semibold">
-                  Hybrid RRF
+                <span className="ml-auto font-mono text-[9px] bg-slate-100 dark:bg-slate-800 text-[#0F2D4A] dark:text-slate-200 px-1.5 py-0.5 rounded font-semibold">
+                  Hybrid Search
                 </span>
               </div>
 
@@ -55,7 +55,7 @@ export function CapabilityBento() {
                     </span>
                   </div>
                   <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
-                    98.4% match
+                    Relevant match
                   </span>
                 </div>
                 <div className="p-2 rounded-lg bg-white dark:bg-card border border-slate-200/50 dark:border-border/50 flex items-center justify-between text-xs">
@@ -69,7 +69,7 @@ export function CapabilityBento() {
                     </span>
                   </div>
                   <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
-                    94.1% match
+                    Relevant match
                   </span>
                 </div>
               </div>
@@ -77,24 +77,24 @@ export function CapabilityBento() {
           </div>
 
           {/* Bento Cell 2: Grounded AI Answers (col-span-5) */}
-          <div className="md:col-span-5 rounded-3xl border border-purple-200/70 dark:border-purple-900/40 bg-purple-50/20 dark:bg-purple-950/20 p-6 sm:p-8 shadow-xs flex flex-col justify-between overflow-hidden relative group">
+          <div className="md:col-span-5 rounded-3xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card p-6 sm:p-8 shadow-xs flex flex-col justify-between overflow-hidden relative group">
             <div className="space-y-2 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-[#7C3AED] dark:text-purple-300 flex items-center justify-center mb-3">
+              <div className="h-10 w-10 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-[#7C3AED] dark:text-purple-300 flex items-center justify-center mb-3">
                 <Sparkles className="h-5 w-5" />
               </div>
               <h3 className="font-heading text-xl font-bold text-slate-900 dark:text-foreground">
-                Grounded AI Answers
+                Grounded Answers
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                Answers are synthesized strictly from retrieved workspace chunks with prompt boundaries that prioritize documentary facts.
+                Answers are synthesized strictly from retrieved workspace passages, with prompt boundaries designed to prevent made-up facts.
               </p>
             </div>
 
-            {/* Visual: Violet AI Message Callout */}
-            <div className="rounded-xl border border-purple-200/80 dark:border-purple-800/50 bg-[#F5F3FF] dark:bg-[#1E1B4B]/50 p-4 border-l-3 border-l-[#7C3AED] space-y-2">
+            {/* Visual: AI Message Callout */}
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-[#F5F7FA] dark:bg-slate-900/40 p-4 border-l-4 border-l-[#7C3AED] space-y-2">
               <div className="flex items-center gap-1.5 text-[#7C3AED] dark:text-purple-300 text-xs font-bold font-heading">
                 <Sparkles className="h-3.5 w-3.5" />
-                <span>Context-Bound Generation</span>
+                <span>Document-Bound Response</span>
               </div>
               <p className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed">
                 &ldquo;Compensation for non-executive trustees is strictly prohibited without unanimous affirmative board resolution.&rdquo;
@@ -105,41 +105,41 @@ export function CapabilityBento() {
           {/* Bento Cell 3: Exact Citations (col-span-5) */}
           <div className="md:col-span-5 rounded-3xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card p-6 sm:p-8 shadow-xs flex flex-col justify-between overflow-hidden relative group">
             <div className="space-y-2 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-[#EEF2FF] dark:bg-indigo-950/60 text-[#4F46E5] dark:text-indigo-400 flex items-center justify-center mb-3">
+              <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-[#0F2D4A] dark:text-white flex items-center justify-center mb-3">
                 <BookmarkCheck className="h-5 w-5" />
               </div>
               <h3 className="font-heading text-xl font-bold text-slate-900 dark:text-foreground">
                 Exact Source Citations
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                Every claim includes interactive source pills. Click any citation to inspect the origin file, page, and chunk excerpt.
+                Every claim includes interactive source chips. Click any citation to review the origin file, section, and exact paragraph.
               </p>
             </div>
 
             {/* Visual: Citation Pills Sample */}
             <div className="p-3.5 rounded-xl border border-slate-100 dark:border-border/60 bg-slate-50/60 dark:bg-muted/20 flex flex-wrap gap-2 items-center">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-card border border-purple-200 dark:border-purple-800 text-[#7C3AED] dark:text-purple-300 font-mono text-xs shadow-2xs">
-                <span className="font-bold">[1]</span>
-                <span>Bylaws.pdf · p.6</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-card border border-slate-200 dark:border-slate-700 text-[#0F2D4A] dark:text-slate-200 font-mono text-xs shadow-2xs font-bold">
+                <span>[1]</span>
+                <span className="font-normal font-sans">Bylaws.pdf · p.6</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-card border border-purple-200 dark:border-purple-800 text-[#7C3AED] dark:text-purple-300 font-mono text-xs shadow-2xs">
-                <span className="font-bold">[2]</span>
-                <span>Travel_Policy.docx · §4</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-card border border-slate-200 dark:border-slate-700 text-[#0F2D4A] dark:text-slate-200 font-mono text-xs shadow-2xs font-bold">
+                <span>[2]</span>
+                <span className="font-normal font-sans">Travel_Policy.docx · §4</span>
               </span>
             </div>
           </div>
 
-          {/* Bento Cell 4: Compare & Summarize (col-span-7) */}
+          {/* Bento Cell 4: Compare & Cross-Synthesize (col-span-7) */}
           <div className="md:col-span-7 rounded-3xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card p-6 sm:p-8 shadow-xs flex flex-col justify-between overflow-hidden relative group">
             <div className="space-y-2 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-[#EEF2FF] dark:bg-indigo-950/60 text-[#4F46E5] dark:text-indigo-400 flex items-center justify-center mb-3">
+              <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-[#0F2D4A] dark:text-white flex items-center justify-center mb-3">
                 <GitCompare className="h-5 w-5" />
               </div>
               <h3 className="font-heading text-xl font-bold text-slate-900 dark:text-foreground">
-                Understand and Compare
+                Cross-Document Synthesis
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-w-md">
-                Cross-analyze multiple versions or parallel policies with agent-powered synthesis. Export findings as structured markdown reports or print-ready briefs.
+                Connect the dots across separate documents. When a policy in one manual intersects with guidelines in another, Satori synthesizes both with clear references.
               </p>
             </div>
 
@@ -147,19 +147,19 @@ export function CapabilityBento() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div className="p-3 rounded-xl border border-slate-200/60 dark:border-border/60 bg-slate-50/60 dark:bg-muted/20">
                 <span className="font-mono text-[10px] font-semibold text-slate-500 dark:text-muted-foreground uppercase">
-                  Version 2024
+                  Handbook v2024
                 </span>
                 <p className="text-xs text-slate-700 dark:text-slate-300 mt-1">
                   Required physical presence for voting; 14-day advance notice required.
                 </p>
               </div>
-              <div className="p-3 rounded-xl border border-indigo-200/70 dark:border-indigo-900/50 bg-[#EEF2FF]/60 dark:bg-indigo-950/30">
-                <span className="font-mono text-[10px] font-semibold text-[#4F46E5] dark:text-indigo-400 uppercase flex items-center gap-1">
-                  <Check className="h-3 w-3" />
-                  <span>Version 2025 (Adopted)</span>
+              <div className="p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-800/50">
+                <span className="font-mono text-[10px] font-semibold text-[#0F2D4A] dark:text-white uppercase flex items-center gap-1">
+                  <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                  <span>Handbook v2025 (Current)</span>
                 </span>
                 <p className="text-xs text-slate-800 dark:text-slate-200 mt-1">
-                  Allows verified electronic attendance; reduces notice window to 5 days.
+                  Permits verified electronic voting; reduces notice requirement to 5 business days.
                 </p>
               </div>
             </div>

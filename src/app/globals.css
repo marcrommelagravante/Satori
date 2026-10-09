@@ -14,6 +14,7 @@
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  --color-navy: var(--navy);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-dark: var(--primary-dark);
@@ -45,6 +46,9 @@
   --popover: #FFFFFF;
   --popover-foreground: #171717;
   
+  /* Satori Brand Navy: #0F2D4A */
+  --navy: #0F2D4A;
+
   /* Satori Brand Primary: Indigo #4F46E5 */
   --primary: #4F46E5;
   --primary-foreground: #FFFFFF;
@@ -82,6 +86,9 @@
   --card-foreground: #F5F5F5;
   --popover: #13121E;
   --popover-foreground: #F5F5F5;
+
+  /* Satori Brand Navy in Dark Mode */
+  --navy: #FFFFFF;
 
   /* Satori Brand Primary: Indigo */
   --primary: #6D69F5;

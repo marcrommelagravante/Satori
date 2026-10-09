@@ -27,7 +27,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Satori — Your knowledge, intelligently connected",
   description:
-    "AI-powered knowledge management and document intelligence platform for teams and organizations.",
+    "Document knowledge workspace that helps teams find answers across their files and inspect the source passages behind those answers.",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({

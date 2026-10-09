@@ -163,12 +163,15 @@ export function ConvergenceStage() {
             <span className="w-2.5 h-2.5 rounded-full bg-rose-400/80 dark:bg-rose-500/70" />
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400/80 dark:bg-amber-500/70" />
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/80 dark:bg-emerald-500/70" />
-            <span className="ml-2 font-mono text-[11px] text-slate-400 dark:text-muted-foreground">
-              satori // knowledge-convergence
+            <span className="ml-2 font-mono text-[11px] text-slate-400 dark:text-muted-foreground hidden sm:inline">
+              interactive-walkthrough // question-to-citation
             </span>
           </div>
 
           <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
+              Interactive example
+            </span>
             <button
               type="button"
               onClick={handleReplay}

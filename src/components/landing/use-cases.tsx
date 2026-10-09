@@ -80,7 +80,7 @@ export function UseCases() {
   const currentCase = cases.find((c) => c.id === activeTab) || cases[0];
 
   return (
-    <section className="py-16 sm:py-24 border-t border-slate-200/60 dark:border-border/60">
+    <section id="use-cases" className="py-16 sm:py-24 border-t border-slate-200/60 dark:border-border/60 scroll-mt-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Heading */}
         <div className="max-w-2xl mx-auto text-center space-y-3 mb-14">
@@ -104,7 +104,7 @@ export function UseCases() {
                 onClick={() => setActiveTab(c.id)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer whitespace-nowrap ${
                   isActive
-                    ? "bg-[#4F46E5] text-white shadow-2xs"
+                    ? "bg-[#0F2D4A] dark:bg-white text-white dark:text-[#0F2D4A] shadow-xs"
                     : "border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-muted"
                 }`}
               >
@@ -130,7 +130,7 @@ export function UseCases() {
               </div>
 
               <div className="space-y-2">
-                <span className="text-[11px] font-mono text-slate-400 dark:text-muted-foreground uppercase tracking-wider block">
+                <span className="text-[11px] font-mono text-slate-400 dark:text-muted-foreground uppercase tracking-wider block font-semibold">
                   Example Knowledge Corpus
                 </span>
                 <div className="space-y-1.5">
@@ -139,7 +139,7 @@ export function UseCases() {
                       key={doc}
                       className="p-2 rounded-lg bg-slate-50 dark:bg-muted/30 border border-slate-200/60 dark:border-border/60 flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300"
                     >
-                      <FileText className="h-3.5 w-3.5 text-[#4F46E5] dark:text-indigo-400 shrink-0" />
+                      <FileText className="h-3.5 w-3.5 text-[#0F2D4A] dark:text-blue-400 shrink-0" />
                       <span className="truncate">{doc}</span>
                     </div>
                   ))}

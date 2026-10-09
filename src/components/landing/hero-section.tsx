@@ -20,22 +20,23 @@ export function HeroSection({ user }: HeroSectionProps) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
           {/* Left Column: Value Copy (col-span-5) */}
           <div className="lg:col-span-5 flex flex-col items-start space-y-6 text-left">
-            {/* Eyebrow 1 of 3 (Taste Rule Compliant: DM Sans 500 Uppercase tracking-widest, no numbers, no em-dash) */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-200/70 dark:border-indigo-900/50 bg-[#EEF2FF] dark:bg-indigo-950/40 text-[#4F46E5] dark:text-indigo-400">
-              <Layers className="h-3.5 w-3.5" />
+            {/* Eyebrow: GROUNDED KNOWLEDGE WORKSPACE */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-card/80 text-[#0F2D4A] dark:text-slate-200 shadow-2xs">
+              <Layers className="h-3.5 w-3.5 text-[#3B82F6]" />
               <span className="font-mono text-[11px] font-semibold tracking-wider uppercase">
                 Grounded Knowledge Workspace
               </span>
             </div>
 
-            {/* Headline: Space Grotesk, 2 lines max */}
+            {/* Headline: Strategy recommended copy */}
             <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-foreground leading-[1.12]">
-              Your knowledge, intelligently connected.
+              Find the answer. <br className="hidden sm:inline" />
+              See the source.
             </h1>
 
-            {/* Subtext: <= 20 words, clear value prop */}
+            {/* Subtext: Plain language outcome */}
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg">
-              Turn scattered team documents into a searchable workspace where every answer traces directly back to verified sources.
+              Search across your PDFs, Word documents, and text files. Ask questions in plain language and inspect the passages behind Satori&rsquo;s answers.
             </p>
 
             {/* CTAs */}
@@ -43,7 +44,7 @@ export function HeroSection({ user }: HeroSectionProps) {
               {user ? (
                 <Link
                   href="/dashboard"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-semibold shadow-sm transition-all"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#0F2D4A] hover:bg-[#18395B] dark:bg-white dark:hover:bg-slate-100 dark:text-[#0F2D4A] text-white text-sm font-semibold shadow-xs transition-all cursor-pointer"
                 >
                   <span>Open dashboard</span>
                   <ArrowRight className="h-4 w-4" />
@@ -51,7 +52,7 @@ export function HeroSection({ user }: HeroSectionProps) {
               ) : (
                 <Link
                   href="/login"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-semibold shadow-sm transition-all"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#0F2D4A] hover:bg-[#18395B] dark:bg-white dark:hover:bg-slate-100 dark:text-[#0F2D4A] text-white text-sm font-semibold shadow-xs transition-all cursor-pointer"
                 >
                   <span>Get started</span>
                   <ArrowRight className="h-4 w-4" />
@@ -60,16 +61,16 @@ export function HeroSection({ user }: HeroSectionProps) {
 
               <a
                 href="#how-it-works"
-                className="w-full sm:w-auto inline-flex items-center justify-center px-5 py-3 rounded-xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-muted text-sm font-semibold shadow-2xs transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center px-5 py-3 rounded-xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-muted text-sm font-semibold shadow-2xs transition-colors cursor-pointer"
               >
                 See how it works
               </a>
             </div>
 
-            {/* Proof line (at most one dot, zero em-dashes) */}
-            <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-muted-foreground pt-2">
+            {/* Proof line */}
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-muted-foreground pt-2">
               <FileCheck className="h-4 w-4 text-[#059669]" />
-              <span>PDF, DOCX, and TXT files · Grounded in your workspace</span>
+              <span>PDF, DOCX, and TXT support · Source-linked answers</span>
             </div>
           </div>
 

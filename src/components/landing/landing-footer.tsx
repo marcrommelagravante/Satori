@@ -9,27 +9,33 @@ export function LandingFooter() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 pb-8 border-b border-slate-100 dark:border-border/50">
           <div className="space-y-2 max-w-sm">
             <Link href="/" className="inline-block">
-              <SatoriLogo size={28} showWordmark={true} />
+              <SatoriLogo size={32} showWordmark={true} showTagline={true} />
             </Link>
-            <p className="text-xs text-slate-500 dark:text-muted-foreground leading-relaxed">
-              Your knowledge, intelligently connected. Built for small organizations, teams, and researchers.
+            <p className="text-xs text-slate-500 dark:text-muted-foreground leading-relaxed pt-1">
+              Document knowledge workspace that helps teams find answers across their files and inspect the source passages behind those answers.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6 sm:gap-8 text-xs font-semibold text-slate-600 dark:text-slate-300">
-            <a href="#how-it-works" className="hover:text-[#4F46E5] dark:hover:text-indigo-400 transition-colors">
+          <div className="flex flex-wrap items-center gap-5 sm:gap-7 text-xs font-semibold text-slate-600 dark:text-slate-300">
+            <a href="#demo" className="hover:text-[#0F2D4A] dark:hover:text-white transition-colors">
+              Demonstration
+            </a>
+            <a href="#how-it-works" className="hover:text-[#0F2D4A] dark:hover:text-white transition-colors">
               How it works
             </a>
-            <a href="#capabilities" className="hover:text-[#4F46E5] dark:hover:text-indigo-400 transition-colors">
+            <a href="#capabilities" className="hover:text-[#0F2D4A] dark:hover:text-white transition-colors">
               Capabilities
             </a>
-            <a href="#traceability" className="hover:text-[#4F46E5] dark:hover:text-indigo-400 transition-colors">
-              Traceability
+            <a href="#use-cases" className="hover:text-[#0F2D4A] dark:hover:text-white transition-colors">
+              Use cases
             </a>
-            <a href="#architecture" className="hover:text-[#4F46E5] dark:hover:text-indigo-400 transition-colors">
+            <a href="#trust" className="hover:text-[#0F2D4A] dark:hover:text-white transition-colors">
+              Security & Trust
+            </a>
+            <a href="#architecture" className="hover:text-[#0F2D4A] dark:hover:text-white transition-colors">
               Architecture
             </a>
-            <Link href="/login" className="hover:text-[#4F46E5] dark:hover:text-indigo-400 transition-colors">
+            <Link href="/login" className="hover:text-[#0F2D4A] dark:hover:text-white transition-colors">
               Sign in
             </Link>
           </div>

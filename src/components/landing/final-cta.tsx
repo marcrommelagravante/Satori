@@ -10,9 +10,8 @@ interface FinalCtaProps {
 
 export function FinalCta({ user }: FinalCtaProps) {
   return (
-    <section className="py-20 sm:py-28 border-t border-slate-200/60 dark:border-border/60 bg-gradient-to-b from-transparent via-indigo-50/30 to-purple-50/30 dark:via-indigo-950/20 dark:to-purple-950/20 relative overflow-hidden">
+    <section className="py-20 sm:py-28 border-t border-slate-200/60 dark:border-border/60 bg-white/60 dark:bg-card/40 relative overflow-hidden">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-
         <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-foreground">
           Bring your documents together.
         </h2>
@@ -25,7 +24,7 @@ export function FinalCta({ user }: FinalCtaProps) {
           {user ? (
             <Link
               href="/dashboard"
-              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-semibold shadow-md transition-all"
+              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-[#0F2D4A] hover:bg-[#18395B] dark:bg-white dark:hover:bg-slate-100 dark:text-[#0F2D4A] text-white text-sm font-semibold shadow-xs transition-all cursor-pointer"
             >
               <span>Open dashboard</span>
               <ArrowRight className="h-4 w-4" />
@@ -34,20 +33,24 @@ export function FinalCta({ user }: FinalCtaProps) {
             <>
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-semibold shadow-md transition-all"
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-[#0F2D4A] hover:bg-[#18395B] dark:bg-white dark:hover:bg-slate-100 dark:text-[#0F2D4A] text-white text-sm font-semibold shadow-xs transition-all cursor-pointer"
               >
                 <span>Get started</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center px-6 py-3.5 rounded-xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-muted text-sm font-semibold shadow-2xs transition-colors"
+                className="inline-flex items-center justify-center px-6 py-3.5 rounded-xl border border-slate-200/80 dark:border-border/80 bg-white dark:bg-card text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-muted text-sm font-semibold shadow-2xs transition-colors cursor-pointer"
               >
                 Sign in
               </Link>
             </>
           )}
         </div>
+
+        <p className="text-xs text-slate-400 dark:text-muted-foreground pt-2">
+          PDF, DOCX, and TXT support · Source-linked answers
+        </p>
       </div>
     </section>
   );

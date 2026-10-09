@@ -14,13 +14,13 @@ export function ArchitectureSection() {
   ];
 
   return (
-    <section id="architecture" className="py-16 sm:py-24 border-t border-slate-200/60 dark:border-border/60">
+    <section id="architecture" className="py-16 sm:py-24 border-t border-slate-200/60 dark:border-border/60 scroll-mt-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Heading with Eyebrow 3 of 3 */}
+        {/* Section Heading */}
         <div className="max-w-2xl mx-auto text-center space-y-3 mb-12">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-indigo-200/70 dark:border-indigo-900/50 bg-[#EEF2FF] dark:bg-indigo-950/40 text-[#4F46E5] dark:text-indigo-400">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-card text-[#0F2D4A] dark:text-slate-200 shadow-2xs">
             <span className="font-mono text-[11px] font-semibold tracking-wider uppercase">
-              Technical Credibility
+              Technical Foundation
             </span>
           </div>
           <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 dark:text-foreground">
