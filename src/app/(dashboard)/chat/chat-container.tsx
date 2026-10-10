@@ -238,7 +238,7 @@ export function ChatContainer({
       conversationId: targetConvId,
       role: "assistant",
       content: "",
-      model: null,
+      model: selectedModel,
       createdAt: new Date(),
       citations: [],
       toolCalls: [],
@@ -376,12 +376,23 @@ export function ChatContainer({
               prev.map((m) => {
                 if (m.id !== tempAssistantId) return m;
                 const toolCalls = [...(m.toolCalls || [])];
-                const match = toolCalls.find(
+                const matchIndex = toolCalls.findIndex(
                   (t) => t.toolName === parsedData.toolName
                 );
-                if (match) {
-                  match.resultSummary = parsedData.resultSummary || "Done";
-                  match.durationMs = parsedData.durationMs || 0;
+                if (matchIndex >= 0) {
+                  toolCalls[matchIndex] = {
+                    ...toolCalls[matchIndex],
+                    resultSummary: parsedData.resultSummary || "Done",
+                    durationMs: parsedData.durationMs || 0,
+                  };
+                } else {
+                  toolCalls.push({
+                    toolName: parsedData.toolName || "Agent Tool",
+                    args: {},
+                    resultSummary: parsedData.resultSummary || "Done",
+                    durationMs: parsedData.durationMs || 0,
+                    success: true,
+                  });
                 }
                 return { ...m, toolCalls };
               })
@@ -394,9 +405,13 @@ export function ChatContainer({
                       ...m,
                       ...(parsedData.assistantMessage || {}),
                       citations: parsedData.citations || [],
-                      toolCalls: parsedData.toolCalls || m.toolCalls,
+                      toolCalls:
+                        parsedData.toolCalls && parsedData.toolCalls.length > 0
+                          ? parsedData.toolCalls
+                          : m.toolCalls,
                       reportId: parsedData.reportId,
                       isAgent: parsedData.isAgent ?? m.isAgent,
+                      model: parsedData.assistantMessage?.model || m.model || selectedModel,
                     }
                   : m
               )

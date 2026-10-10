@@ -35,6 +35,7 @@ export interface RunAgentLoopOptions {
   userPrompt: string;
   maxIterations?: number;
   documentIds?: string[];
+  model?: string;
 }
 
 export interface AgentToolCallLog {
@@ -284,7 +285,7 @@ export async function runAgentLoop(
 ): Promise<AgentLoopResult> {
   const startTime = Date.now();
   const maxIterations = options.maxIterations ?? 8;
-  const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+  const model = options.model || process.env.GEMINI_MODEL || "gemini-3.6-flash";
   const client = getGenAIClient();
 
   const toolCalls: AgentToolCallLog[] = [];

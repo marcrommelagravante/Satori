@@ -461,7 +461,7 @@ export function SemanticSearchPlayground({
 
             <div className="border-t border-border px-5 py-3 bg-muted/10 text-xs text-muted-foreground flex justify-between items-center">
               <span>
-                Formatted for Gemini 3.8 Flash grounding with structured citation attributes.
+                Formatted for Gemini 3.6 Flash grounding with structured citation attributes.
               </span>
               <Button
                 variant="secondary"

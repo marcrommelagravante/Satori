@@ -251,7 +251,7 @@ export async function runEvaluationSuite(
       await db.insert(aiRuns).values({
         workspaceId,
         userId,
-        model: process.env.GEMINI_MODEL || "gemini-3.8-flash",
+        model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
         operation: "evaluation_suite",
         latencyMs: Date.now() - suiteStartTime,
         inputTokens: n * 500,

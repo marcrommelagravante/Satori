@@ -222,15 +222,24 @@ export default async function ReportDetailPage({
             )}
 
             {/* Key Findings */}
-            {Array.isArray(content.keyFindings) &&
-              content.keyFindings.length > 0 && (
+            {(() => {
+              const validFindings = Array.isArray(content.keyFindings)
+                ? content.keyFindings.filter(
+                    (f: unknown) =>
+                      typeof f === "string" &&
+                      f.trim().length > 0 &&
+                      !/^running\.*/i.test(f.trim())
+                  )
+                : [];
+              if (validFindings.length === 0) return null;
+              return (
                 <div className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-4">
                   <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                     Key Findings
                   </h2>
                   <div className="grid gap-2.5">
-                    {content.keyFindings.map((finding: string, idx: number) => (
+                    {validFindings.map((finding: string, idx: number) => (
                       <div
                         key={idx}
                         className="flex items-start gap-3 rounded-xl bg-background/60 p-3.5 border border-border/40 text-sm leading-relaxed"
@@ -243,7 +252,8 @@ export default async function ReportDetailPage({
                     ))}
                   </div>
                 </div>
-              )}
+              );
+            })()}
 
             {/* Sections */}
             {Array.isArray(content.sections) &&

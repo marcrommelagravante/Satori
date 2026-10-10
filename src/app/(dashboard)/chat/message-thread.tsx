@@ -184,7 +184,11 @@ export function MessageThread({
                           : "text-[#7C3AED] border-violet-200/60 dark:border-violet-900/60 bg-violet-50/60 dark:bg-violet-950/40"
                       }`}
                     >
-                      {msg.isAgent ? "autonomous-agent" : msg.model || "gemini-3.8-flash"}
+                      {msg.isAgent
+                        ? "autonomous-agent"
+                        : (!msg.model || msg.model === "gemini-3.8-flash"
+                            ? "gemini-3.6-flash"
+                            : msg.model)}
                     </Badge>
                   </div>
                   <span className="text-[11px] text-muted-foreground">
@@ -202,7 +206,7 @@ export function MessageThread({
                   <p className="whitespace-pre-wrap text-sm sm:text-[14.5px] leading-relaxed text-white">
                     {msg.content}
                   </p>
-                ) : (
+                ) : msg.content ? (
                   <MarkdownRenderer
                     content={msg.content}
                     citations={msg.citations || []}
@@ -210,7 +214,22 @@ export function MessageThread({
                     onSelectCitation={onSelectCitation}
                     isStreaming={isLoading && idx === messages.length - 1}
                   />
-                )}
+                ) : isLoading && idx === messages.length - 1 && (!msg.toolCalls || msg.toolCalls.length === 0) ? (
+                  <div className="space-y-3 py-1">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Sparkles className="h-3.5 w-3.5 text-[#7C3AED] dark:text-violet-400 animate-spin" />
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-500 animate-ping" />
+                      <span className="text-[12px] text-muted-foreground">
+                        Retrieving chunks &amp; generating grounded response...
+                      </span>
+                    </div>
+                    <div className="space-y-2 pt-0.5">
+                      <div className="h-2.5 bg-slate-100 dark:bg-muted/60 rounded-full w-4/5 animate-pulse" />
+                      <div className="h-2.5 bg-slate-100 dark:bg-muted/60 rounded-full w-full animate-pulse" />
+                      <div className="h-2.5 bg-slate-100 dark:bg-muted/60 rounded-full w-2/3 animate-pulse" />
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               {/* Agent Tool Trace & Report Link */}
@@ -220,6 +239,7 @@ export function MessageThread({
                   reportId={msg.reportId}
                   workspaceId={workspaceId}
                   assistantText={msg.content}
+                  isLoading={isLoading && idx === messages.length - 1}
                 />
               )}
 
@@ -341,8 +361,8 @@ export function MessageThread({
         );
       })}
 
-      {/* Loading Skeleton before first tokens arrive */}
-      {isLoading && (!messages[messages.length - 1] || messages[messages.length - 1].role === "user" || messages[messages.length - 1].content.length === 0) && (
+      {/* Loading Skeleton fallback only before assistant message is created */}
+      {isLoading && (!messages[messages.length - 1] || messages[messages.length - 1].role === "user") && (
         <div className="flex items-start gap-3">
           <div className="h-8 w-8 rounded-xl bg-secondary text-secondary-foreground flex items-center justify-center shrink-0 shadow-2xs">
             <Sparkles className="h-4 w-4 animate-spin" />

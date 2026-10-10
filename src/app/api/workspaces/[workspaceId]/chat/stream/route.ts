@@ -152,6 +152,7 @@ export async function POST(
             conversationId,
             userPrompt: userText,
             documentIds: validDocumentIds,
+            model: requestedModel || "gemini-3.6-flash",
           });
 
           for (const tc of agentResult.toolCalls) {
@@ -161,6 +162,15 @@ export async function POST(
               durationMs: tc.durationMs,
             });
           }
+
+          sendEvent("tool_done", {
+            toolName: "satoriAgent",
+            resultSummary:
+              agentResult.toolCalls.length > 0
+                ? `Completed ${agentResult.toolCalls.length} tool executions`
+                : "Completed document analysis",
+            durationMs: agentResult.latencyMs,
+          });
 
           // Stream the resulting text in natural-sized token chunks
           const words = agentResult.text.split(/(\s+)/);

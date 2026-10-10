@@ -84,7 +84,7 @@ export function AgentThinking({
   }
 
   const handleSaveReport = async () => {
-    if (!workspaceId || isSaving) return;
+    if (!workspaceId || isSaving || isLoading || !assistantText?.trim()) return;
     setIsSaving(true);
     try {
       const isCompare = toolCalls.some(
@@ -94,13 +94,37 @@ export function AgentThinking({
         ? "Workspace Document Comparison"
         : "Workspace Intelligence Summary";
 
+      // Extract authentic findings from the generated assistant synthesis
+      const lines = (assistantText || "").split("\n");
+      const bulletPoints = lines
+        .map((l) => l.trim())
+        .filter((l) => l.startsWith("- ") || l.startsWith("* ") || /^\d+\.\s/.test(l))
+        .map((l) => l.replace(/^[-*]\s+|\d+\.\s+/, "").trim())
+        .filter((l) => l.length > 10 && !/^running\.*/i.test(l));
+
+      const keyFindings =
+        bulletPoints.length > 0
+          ? bulletPoints.slice(0, 6)
+          : lines
+              .map((l) => l.trim())
+              .filter(
+                (l) =>
+                  l.length > 20 &&
+                  !l.startsWith("#") &&
+                  !/^running\.*/i.test(l)
+              )
+              .slice(0, 4);
+
       const res = await createReportAction({
         workspaceId,
         title,
         type: isCompare ? "document_comparison" : "document_summary",
         content: {
-          summary: assistantText || "Analysis generated from workspace documents.",
-          keyFindings: toolCalls.map((tc) => tc.resultSummary),
+          summary: assistantText,
+          keyFindings:
+            keyFindings.length > 0
+              ? keyFindings
+              : ["Synthesized insights from workspace documentation."],
         },
       });
 
@@ -224,7 +248,7 @@ export function AgentThinking({
       </div>
 
       {/* 1-Click Save as Report Artifact button if synthesis was completed without pre-existing report */}
-      {!effectiveReportId && !isLoading && workspaceId && toolCalls.length > 0 && (
+      {!effectiveReportId && !isLoading && workspaceId && Boolean(assistantText && assistantText.trim().length > 20) && (
         <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <FileSpreadsheet className="h-3.5 w-3.5 text-primary" />
