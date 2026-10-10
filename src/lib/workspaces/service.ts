@@ -157,3 +157,24 @@ export async function deleteWorkspace(
 
   return true;
 }
+
+export async function renameWorkspace(
+  workspaceId: string,
+  name: string
+): Promise<Workspace> {
+  const [updated] = await db
+    .update(workspaces)
+    .set({
+      name,
+      updatedAt: new Date(),
+    })
+    .where(eq(workspaces.id, workspaceId))
+    .returning();
+
+  if (!updated) {
+    throw new Error("Workspace not found");
+  }
+
+  return updated;
+}
+

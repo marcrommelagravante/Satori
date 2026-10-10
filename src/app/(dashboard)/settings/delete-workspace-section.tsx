@@ -2,9 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { deleteWorkspaceAction } from "@/lib/../app/actions/workspaces";
+import { deleteWorkspaceAction } from "@/app/actions/workspaces";
 import { AlertTriangle, Trash2, Loader2 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -46,43 +45,50 @@ export function DeleteWorkspaceSection({
   };
 
   return (
-    <Card className="border-destructive/30 bg-destructive/5">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-destructive" />
-          <CardTitle className="text-base text-destructive">Danger Zone</CardTitle>
+    <div className="rounded-2xl sm:rounded-3xl border border-rose-200/80 dark:border-rose-950/60 bg-rose-50/30 dark:bg-rose-950/10 p-5 sm:p-6 shadow-xs space-y-4">
+      <div className="flex items-center gap-3.5">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 shrink-0">
+          <AlertTriangle className="h-5 w-5" />
         </div>
-        <CardDescription>
-          Irreversible actions for this workspace and its associated resources.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
         <div>
-          <h4 className="text-sm font-semibold text-foreground">Delete this workspace</h4>
-          <p className="text-xs text-muted-foreground mt-1">
+          <h3 className="font-heading text-sm sm:text-base font-bold text-rose-900 dark:text-rose-300">
+            Danger Zone
+          </h3>
+          <p className="text-xs text-rose-600/80 dark:text-rose-400/80 mt-0.5">
+            Irreversible actions for this workspace and its associated resources.
+          </p>
+        </div>
+      </div>
+
+      <div className="pt-2 border-t border-rose-200/60 dark:border-rose-950/40 space-y-3">
+        <div>
+          <h4 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-foreground">
+            Delete this workspace
+          </h4>
+          <p className="text-xs text-slate-500 dark:text-muted-foreground mt-0.5 leading-relaxed">
             Permanently purges all documents, vector embeddings, conversations, reports, and benchmarks.
-            Physical files in storage will be removed. This action cannot be undone.
+            Physical files in storage will be removed immediately. This action cannot be undone.
           </p>
         </div>
 
         {!isOwner ? (
-          <p className="text-xs text-muted-foreground italic">
-            Only workspace owners can delete this workspace.
+          <p className="text-xs text-slate-500 dark:text-muted-foreground italic">
+            Only workspace owners have permission to delete this workspace.
           </p>
         ) : !isConfirming ? (
           <Button
             variant="destructive"
             size="sm"
             onClick={() => setIsConfirming(true)}
-            className="flex items-center gap-2"
+            className="rounded-xl h-9 px-4 text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-2xs"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
             Delete Workspace
           </Button>
         ) : (
-          <div className="space-y-3 p-4 rounded-md border border-destructive/30 bg-background">
-            <p className="text-xs text-foreground font-medium">
-              To confirm deletion, type <span className="font-bold text-destructive">{workspaceName}</span> below:
+          <div className="space-y-3 p-4 rounded-xl border border-rose-200 dark:border-rose-900/50 bg-white dark:bg-background">
+            <p className="text-xs text-slate-800 dark:text-slate-200 font-medium">
+              To confirm deletion, type <span className="font-bold text-rose-600 dark:text-rose-400">{workspaceName}</span> below:
             </p>
             <Input
               value={confirmationInput}
@@ -91,26 +97,26 @@ export function DeleteWorkspaceSection({
                 setError(null);
               }}
               placeholder={workspaceName}
-              className="text-sm"
+              className="h-9 text-xs rounded-xl border-slate-200 dark:border-border"
               disabled={isPending}
             />
-            {error && <p className="text-xs text-destructive">{error}</p>}
-            <div className="flex items-center gap-2">
+            {error && <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">{error}</p>}
+            <div className="flex items-center gap-2 pt-1">
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={handleDelete}
                 disabled={confirmationInput !== workspaceName || isPending}
-                className="flex items-center gap-2"
+                className="rounded-xl h-8 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
               >
                 {isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     Deleting...
                   </>
                 ) : (
                   <>
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                     Permanently Delete
                   </>
                 )}
@@ -124,13 +130,15 @@ export function DeleteWorkspaceSection({
                   setError(null);
                 }}
                 disabled={isPending}
+                className="rounded-xl h-8 text-xs cursor-pointer"
               >
                 Cancel
               </Button>
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
+

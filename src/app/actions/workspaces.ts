@@ -68,3 +68,53 @@ export async function deleteWorkspaceAction(workspaceId: string): Promise<{ succ
     };
   }
 }
+
+const renameWorkspaceSchema = z.object({
+  workspaceId: z.string().min(1, "Workspace ID is required"),
+  name: z.string().trim().min(2, "Workspace name must be at least 2 characters").max(50, "Workspace name cannot exceed 50 characters"),
+});
+
+export async function renameWorkspaceAction(
+  workspaceId: string,
+  name: string
+): Promise<{ success: boolean; error?: string; name?: string }> {
+  try {
+    const validated = renameWorkspaceSchema.safeParse({ workspaceId, name });
+    if (!validated.success) {
+      return {
+        success: false,
+        error: validated.error.issues[0]?.message || "Invalid workspace name",
+      };
+    }
+
+    const { requireWorkspaceMember } = await import("@/lib/workspaces/guard");
+    const { renameWorkspace } = await import("@/lib/workspaces/service");
+    const { logAuditEvent } = await import("@/lib/security/audit");
+
+    const ctx = await requireWorkspaceMember(validated.data.workspaceId, "admin");
+    const previousName = ctx.workspace.name;
+
+    const updated = await renameWorkspace(validated.data.workspaceId, validated.data.name);
+
+    await logAuditEvent({
+      workspaceId: validated.data.workspaceId,
+      userId: ctx.user.id,
+      action: "workspace.rename",
+      resourceType: "workspace",
+      resourceId: validated.data.workspaceId,
+      metadata: {
+        from: previousName,
+        to: updated.name,
+      },
+    });
+
+    revalidatePath("/", "layout");
+    return { success: true, name: updated.name };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to rename workspace",
+    };
+  }
+}
+

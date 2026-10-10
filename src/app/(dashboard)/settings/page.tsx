@@ -1,6 +1,7 @@
 import { requireAuth } from "@/lib/auth/session";
 import { getUserWorkspaces } from "@/lib/workspaces/service";
 import { SettingsView } from "@/components/settings/settings-view";
+import { getAiEngineInfo } from "@/lib/ai/info";
 import { redirect } from "next/navigation";
 
 interface SettingsPageProps {
@@ -19,10 +20,14 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const activeWorkspace =
     (params.ws && workspaces.find((w) => w.id === params.ws)) || workspaces[0];
 
+  const aiEngine = getAiEngineInfo();
+
   return (
     <SettingsView
       user={user}
       activeWorkspace={activeWorkspace}
+      aiEngine={aiEngine}
     />
   );
 }
+
