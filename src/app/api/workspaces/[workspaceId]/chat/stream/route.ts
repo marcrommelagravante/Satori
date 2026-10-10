@@ -10,7 +10,10 @@ import {
 } from "@/lib/db/schema";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { searchChunks, buildRagContext } from "@/lib/rag";
-import { generateGroundedResponseStream } from "@/lib/ai/gemini";
+import {
+  generateGroundedResponseStream,
+  buildGroundedSystemInstruction,
+} from "@/lib/ai/gemini";
 import { runAgentLoop, detectAgentMode } from "@/lib/ai/agent";
 import {
   finalizeAndSaveAssistantMessage,
@@ -260,19 +263,18 @@ export async function POST(
           scopedDocumentCount: validDocumentIds?.length ?? 0,
         });
 
-        // 4. Stream response from Gemini
+        // 4. Stream response from Gemini with full grounded formatting & citation directives
         const startTime = Date.now();
-        const scopedSystemInstruction =
-          validDocumentIds && validDocumentIds.length > 0
-            ? "CRITICAL INSTRUCTION: The user has attached specific reference documents to scope this answer. Your response MUST be derived strictly from the provided context corresponding to these attached documents. If the context does not contain the answer, explicitly state that the attached document(s) do not contain the requested information. Do not invent details or pull from unprovided sources."
-            : undefined;
+        const effectiveSystemInstruction = buildGroundedSystemInstruction({
+          isScopedToDocuments: Boolean(validDocumentIds && validDocumentIds.length > 0),
+        });
 
         const streamGenerator = generateGroundedResponseStream({
           userQuestion: userText,
           context: ragContext.formattedContext,
           conversationHistory: historyTurns,
           model: requestedModel,
-          systemPrompt: scopedSystemInstruction,
+          systemPrompt: effectiveSystemInstruction,
         });
 
         let accumulatedText = "";

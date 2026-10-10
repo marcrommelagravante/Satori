@@ -44,7 +44,6 @@ export function LandingNavbar({ user }: LandingNavbarProps) {
     { label: "Capabilities", href: "#capabilities" },
     { label: "Use cases", href: "#use-cases" },
     { label: "Security & Trust", href: "#trust" },
-    { label: "Architecture", href: "#architecture" },
   ];
 
   return (

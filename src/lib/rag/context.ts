@@ -38,6 +38,22 @@ export interface BuildRagContextOptions {
 }
 
 /**
+ * Cleans document extraction artifacts such as Table of Contents dot leaders,
+ * fill lines, and loose page trackers that degrade LLM comprehension.
+ */
+export function cleanDocumentTextArtifacts(text: string): string {
+  if (!text) return "";
+  return text
+    // Strip Table of Contents dot leaders (e.g., "....... 28" or "....")
+    .replace(/(?:\s*\.{2,}\s*)+(?:\d+)?/g, " ")
+    // Strip fill lines of underscores or dashes
+    .replace(/[_\-]{4,}/g, " ")
+    // Collapse multiple inline spaces while keeping newlines
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
+/**
  * Builds an XML-structured context block for grounding LLM generation.
  * Enforces token limits, protects against prompt injection from document text,
  * and generates structured citation mappings for Phase 4.
@@ -86,14 +102,12 @@ export function buildRagContext(
       pageNumber: chunk.pageNumber,
       section: chunk.section,
       relevanceScore: chunk.similarityScore,
-      contentSnippet:
-        chunk.content.length > 120
-          ? `${chunk.content.slice(0, 120)}...`
-          : chunk.content,
+      contentSnippet: cleanDocumentTextArtifacts(chunk.content),
     };
 
     // Sanitize untrusted content and defang injection attempts
-    const sanitizedContent = sanitizeUntrustedDocumentText(chunk.content);
+    const cleanedText = cleanDocumentTextArtifacts(chunk.content);
+    const sanitizedContent = sanitizeUntrustedDocumentText(cleanedText);
 
     const attrs = [
       `id="${sourceId}"`,

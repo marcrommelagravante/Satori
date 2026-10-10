@@ -14,6 +14,7 @@ import { eq, and, desc, asc, inArray } from "drizzle-orm";
 import {
   searchChunks,
   buildRagContext,
+  cleanDocumentTextArtifacts,
   type SourceAttribution,
 } from "@/lib/rag";
 import { generateGroundedResponse } from "@/lib/ai/gemini";
@@ -200,10 +201,7 @@ export async function getMessages(
       documentName: row.documentName,
       pageNumber: row.pageNumber,
       section: row.section,
-      contentSnippet:
-        row.content.length > 150
-          ? `${row.content.slice(0, 150)}...`
-          : row.content,
+      contentSnippet: cleanDocumentTextArtifacts(row.content),
     });
     citationsByMessage.set(row.messageId, list);
   }

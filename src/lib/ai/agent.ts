@@ -2,6 +2,7 @@ import { getGenAIClient } from "@/lib/ai/gemini";
 import { AGENT_TOOLS } from "./tools/definitions";
 import { executeTool, ToolExecutionContext } from "./tools/executor";
 import { PROMPT_INJECTION_DEFENSE_INSTRUCTION } from "@/lib/security/prompt-boundary";
+import { cleanDocumentTextArtifacts } from "@/lib/rag/context";
 
 export const AGENT_SYSTEM_PROMPT = `You are Satori Agent, an autonomous document intelligence assistant for knowledge workspaces.
 You have access to tools to search, read, summarize, compare documents, and create structured reports in this workspace.
@@ -21,7 +22,11 @@ CRITICAL INSTRUCTIONS:
    - Call 'createReport' with appropriate type ('document_summary' or 'document_comparison') and well-structured content.
    - In your final response, inform the user that the report was generated and summarize its main takeaways.
 6. CITE YOUR SOURCES: Reference document titles and sections wherever possible.
-7. If information is not found in the documents, explicitly state that rather than assuming.`;
+7. If information is not found in the documents, explicitly state that rather than assuming.
+8. COMMUNICATION & FORMATTING:
+   - Format final responses using clean, structured Markdown with headings (###), bold lead-ins for bullets (* **Concept:** Explanation), and distinct paragraph spacing.
+   - For domain inquiries like "RRL" (Review of Related Literature), synthesize the actual literature and analytical findings; never output Table of Contents dots or metadata.
+   - Ignore dot leaders, pagination tracks, or formatting boilerplate.`;
 
 export interface RunAgentLoopOptions {
   workspaceId: string;
@@ -58,14 +63,13 @@ export function detectAgentMode(message: string): boolean {
   if (!message) return false;
   const lower = message.toLowerCase().trim();
 
-  // Keyword indicators
+  // Targeted patterns for complex multi-step operations
   const agentPatterns = [
     /\b(compare|comparison|versus|vs\.?)\b/i,
     /\b(differences? between|contrast)\b/i,
     /\b(create|generate|build|write)\s+(a\s+)?report\b/i,
-    /\b(summarize|summary of|give me a summary)\b/i,
-    /\b(deep dive|in-depth analysis|analyze both|cross-reference)\b/i,
-    /\b(all documents|across the workspace|across documents)\b/i,
+    /\b(deep dive|cross-reference multiple|analyze both)\b/i,
+    /\b(across all documents|across the entire workspace)\b/i,
   ];
 
   return agentPatterns.some((pattern) => pattern.test(lower));
@@ -241,11 +245,23 @@ async function runFallbackAgentLoop(
 
     const docName =
       sumData?.documentName || chunks[0]?.documentName || "workspace document";
-    const snippet =
-      chunks[0]?.content?.slice(0, 240) ||
-      "Information retrieved from document.";
+    const rawContent = chunks[0]?.content || "";
+    const cleanContent = cleanDocumentTextArtifacts(rawContent);
+    const contentLines = cleanContent
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(
+        (l) =>
+          l.length > 25 &&
+          !/^(references|table of contents|contents)\b/i.test(l) &&
+          !/^[\d\s.]+$/.test(l)
+      );
+    const substantiveSnippet =
+      contentLines[0] ||
+      cleanContent.slice(0, 300) ||
+      "Document content analyzed.";
 
-    synthesisText = `### Summary of ${docName}\n\nBased on your workspace documents, the key findings include:\n\n> "${snippet}..."\n\n${createdReportId ? `I have compiled and saved a structured report artifact to your Reports tab.` : ""}`;
+    synthesisText = `### Analysis: ${docName}\n\nBased on your workspace documentation, the key findings include:\n\n* **Core Synthesis:** ${substantiveSnippet}\n\n${createdReportId ? `* **Structured Report:** Generated and saved to your [Reports tab](/reports).` : ""}`;
   } else {
     synthesisText = `I searched your workspace for "${prompt}", but no matching documents were found. Please verify that relevant documents have been uploaded and processed in this workspace.`;
   }
@@ -285,59 +301,74 @@ export async function runAgentLoop(
   }
 
   try {
-    // Initial Turn with timeout protection
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Interactions API timeout")), 3500)
-    );
-
     const effectivePrompt =
       options.documentIds && options.documentIds.length > 0
         ? `[Attached Document IDs to focus on: ${options.documentIds.join(", ")}]\n${options.userPrompt}`
         : options.userPrompt;
 
+    const geminiTools = [
+      {
+        functionDeclarations: AGENT_TOOLS.map((t) => ({
+          name: t.name,
+          description: t.description,
+          parameters: t.parameters,
+        })),
+      },
+    ];
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let currentInteraction: any = await Promise.race([
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (client as any).interactions.create({
-        model,
-        system_instruction: AGENT_SYSTEM_PROMPT,
-        input: effectivePrompt,
-        tools: AGENT_TOOLS,
-      }),
-      timeoutPromise,
-    ]);
+    const contents: any[] = [
+      {
+        role: "user",
+        parts: [{ text: effectivePrompt }],
+      },
+    ];
 
     let iterationCount = 0;
     let finalAnswer = "";
 
     while (iterationCount < maxIterations) {
-      // Check for tool call steps
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const steps = currentInteraction.steps || [];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const functionCalls = steps.filter((s: any) => s.type === "function_call");
+      iterationCount++;
 
-      if (functionCalls.length === 0) {
-        finalAnswer =
-          currentInteraction.output_text ||
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          steps.find((s: any) => s.type === "model_output")?.content?.[0]
-            ?.text ||
-          "Completed document analysis.";
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Agent generation turn timeout")), 15000)
+      );
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await Promise.race([
+        client.models.generateContent({
+          model,
+          contents,
+          config: {
+            systemInstruction: AGENT_SYSTEM_PROMPT,
+            tools: geminiTools as any,
+            temperature: 0.2,
+          },
+        }),
+        timeoutPromise,
+      ]);
+
+      const candidate = response.candidates?.[0];
+      const modelParts = candidate?.content?.parts || [];
+      const functionCalls = response.functionCalls || [];
+
+      if (!functionCalls || functionCalls.length === 0) {
+        finalAnswer = response.text || "Completed document analysis.";
         break;
       }
 
-      // Execute all proposed function calls in this step
+      // Add model's function calls to dialogue context
+      contents.push({
+        role: "model",
+        parts: modelParts,
+      });
+
+      // Execute each function call and gather responses
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const functionResults: any[] = [];
+      const functionResponseParts: any[] = [];
 
       for (const fc of functionCalls) {
-        iterationCount++;
-        if (iterationCount > maxIterations) {
-          break;
-        }
-
-        const execResult = await executeTool(fc.name, fc.arguments, context);
+        const execResult = await executeTool(fc.name, fc.args, context);
 
         let resultSummary = execResult.success
           ? "Execution successful"
@@ -360,69 +391,45 @@ export async function runAgentLoop(
 
         toolCalls.push({
           toolName: fc.name,
-          args: fc.arguments,
+          args: fc.args,
           resultSummary,
           durationMs: execResult.durationMs,
           success: execResult.success,
         });
 
-        functionResults.push({
-          type: "function_result",
-          name: fc.name,
-          call_id: fc.id,
-          result: [
-            {
-              type: "text",
-              text: JSON.stringify(
-                execResult.success
-                  ? execResult.data
-                  : { error: execResult.error }
-              ),
+        functionResponseParts.push({
+          functionResponse: {
+            name: fc.name,
+            response: {
+              output: execResult.success
+                ? execResult.data
+                : { error: execResult.error },
             },
-          ],
+          },
         });
       }
 
-      if (iterationCount >= maxIterations) {
-        finalAnswer =
-          "Agent reached the maximum tool loop limit (8 steps). Partial findings have been collected, but the analysis was bounded.";
-        break;
-      }
-
-      // Send function results back to model with timeout protection
-      const nextTurnTimeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Next turn timeout")), 3500)
-      );
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      currentInteraction = await Promise.race([
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (client as any).interactions.create({
-          model,
-          input: functionResults,
-          tools: AGENT_TOOLS,
-          previous_interaction_id: currentInteraction.id,
-        }),
-        nextTurnTimeout,
-      ]);
+      // Append tool execution responses to dialogue context
+      contents.push({
+        role: "user",
+        parts: functionResponseParts,
+      });
     }
 
-    if (!finalAnswer && currentInteraction?.output_text) {
-      finalAnswer = currentInteraction.output_text;
+    if (!finalAnswer) {
+      finalAnswer = "Completed document analysis across workspace.";
     }
 
     return {
-      text: finalAnswer || "Completed analysis.",
+      text: finalAnswer,
       toolCalls,
       createdReportId,
       latencyMs: Date.now() - startTime,
-      inputTokens: currentInteraction?.usage?.input_tokens,
-      outputTokens: currentInteraction?.usage?.output_tokens,
       model,
     };
   } catch (err) {
     console.warn(
-      "Agent Interactions API fallback engaged:",
+      "Agent execution fallback engaged:",
       err instanceof Error ? err.message : err
     );
     return runFallbackAgentLoop(options, context, toolCalls, startTime, model);

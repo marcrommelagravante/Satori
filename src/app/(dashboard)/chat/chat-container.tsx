@@ -463,9 +463,36 @@ export function ChatContainer({
   };
 
   const handleSelectCitation = (citation: CitationDetail) => {
+    // If citation is from an assistant message, ensure its citations are loaded into the panel
+    const containingMsg = messages.find((m) =>
+      m.citations?.some((c) => c.id === citation.id)
+    );
+    if (containingMsg?.citations && containingMsg.citations.length > 0) {
+      setActiveCitations(containingMsg.citations);
+    }
     setSelectedCitationId(citation.id);
     setIsCitationPanelOpen(true);
   };
+
+  // Determine active query for smart keyword highlighting in source citations
+  const activeQuery = (() => {
+    if (selectedCitationId) {
+      const assistantIdx = messages.findIndex(
+        (m) =>
+          m.role === "assistant" &&
+          m.citations?.some((c) => c.id === selectedCitationId)
+      );
+      if (assistantIdx > 0) {
+        for (let i = assistantIdx - 1; i >= 0; i--) {
+          if (messages[i].role === "user") {
+            return messages[i].content;
+          }
+        }
+      }
+    }
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    return lastUser?.content || "";
+  })();
 
   return (
     <div className="w-full flex-1 flex flex-col space-y-4 min-h-0">
@@ -648,6 +675,7 @@ export function ChatContainer({
           selectedCitationId={selectedCitationId}
           onSelectCitation={(id) => setSelectedCitationId(id)}
           onClose={() => setIsCitationPanelOpen(false)}
+          activeQuery={activeQuery}
         />
       )}
     </div>

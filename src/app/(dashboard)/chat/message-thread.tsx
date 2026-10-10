@@ -1,20 +1,22 @@
 "use client";
 
-import { useEffect, useRef, Fragment } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MessageWithCitations, CitationDetail } from "@/lib/chat";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Sparkles,
   User,
-  BookOpen,
   CheckCircle2,
   FileText,
   RotateCcw,
-  BotMessageSquare,
   Bot,
+  Copy,
+  Check,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import { AgentThinking } from "@/components/chat/agent-thinking";
+import { MarkdownRenderer } from "@/components/chat/markdown-renderer";
 
 interface MessageThreadProps {
   messages: MessageWithCitations[];
@@ -38,92 +40,32 @@ export function MessageThread({
   onRetry,
 }: MessageThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [feedbacks, setFeedbacks] = useState<Record<string, "up" | "down">>({});
 
   // Auto-scroll to bottom on new messages or loading state change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
+  const handleCopy = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleFeedback = (id: string, type: "up" | "down") => {
+    setFeedbacks((prev) => ({
+      ...prev,
+      [id]: prev[id] === type ? (undefined as unknown as "up") : type,
+    }));
+  };
+
   const suggestedQuestions = [
     "What are the equipment and home office reimbursement policies?",
     "What are the guidelines regarding conduct and compliance?",
     "Summarize the key sections in our workspace documents.",
   ];
-
-  // Helper to parse inline [source-N] markers in assistant text
-  const renderMessageContent = (
-    text: string,
-    citations: CitationDetail[] = []
-  ) => {
-    // 1. Normalize compound citation brackets: e.g. [source-1 source-2] or [1, 2] -> [source-1] [source-2]
-    const normalizedText = text.replace(
-      /\[([0-9\s,;a-z_-]+)\]/gi,
-      (fullMatch, inner) => {
-        const trimmed = inner.trim();
-        if (/source/i.test(trimmed) || /^[0-9\s,;-]+$/.test(trimmed)) {
-          const numbers = [...trimmed.matchAll(/\d+/g)].map((m) => m[0]);
-          if (numbers.length > 1) {
-            return numbers.map((n) => `[source-${n}]`).join(" ");
-          }
-          if (numbers.length === 1 && !/source/i.test(trimmed)) {
-            return `[source-${numbers[0]}]`;
-          }
-        }
-        return fullMatch;
-      }
-    );
-
-    // 2. Regex splits by [source-N], [source:N], [source N]
-    const parts = normalizedText.split(/(\[source[-_:]?\s*\d+\])/gi);
-
-    return parts.map((part, index) => {
-      const match = part.match(/\[source[-_:]?\s*(\d+)\]/i);
-      if (match) {
-        const sourceRank = parseInt(match[1], 10);
-        const matchedCitation =
-          citations.find((c) => c.rank === sourceRank) ||
-          citations[sourceRank - 1];
-
-        return (
-          <button
-            key={index}
-            type="button"
-            onClick={() => {
-              if (matchedCitation) {
-                onSelectCitation(matchedCitation);
-              }
-            }}
-            className={`inline-flex items-center gap-0.5 mx-0.5 px-1.5 py-0.2 rounded-md text-[11px] font-semibold transition-all cursor-pointer align-baseline ${
-              matchedCitation && matchedCitation.id === activeCitationId
-                ? "bg-secondary text-secondary-foreground shadow-xs"
-                : "bg-secondary/15 text-secondary hover:bg-secondary/25 border border-secondary/30"
-            }`}
-            title={
-              matchedCitation
-                ? `Source ${sourceRank}: ${matchedCitation.documentName || "Document"}`
-                : `Source ${sourceRank}`
-            }
-          >
-            <BookOpen className="h-2.5 w-2.5" />
-            <span>[{sourceRank}]</span>
-          </button>
-        );
-      }
-
-      // Format markdown-style paragraphs and newlines
-      const lines = part.split("\n");
-      return (
-        <Fragment key={index}>
-          {lines.map((line, lIdx) => (
-            <Fragment key={lIdx}>
-              {line}
-              {lIdx < lines.length - 1 && <br />}
-            </Fragment>
-          ))}
-        </Fragment>
-      );
-    });
-  };
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 flex flex-col">
@@ -213,37 +155,39 @@ export function MessageThread({
 
             {/* Bubble Content */}
             <div
-              className={`max-w-2xl rounded-2xl p-4 text-xs sm:text-sm space-y-2 shadow-2xs transition-all ${
+              className={`space-y-3 transition-all ${
                 isUser
-                  ? "bg-[#4F46E5] text-white rounded-tr-xs"
-                  : "bg-white dark:bg-card border border-slate-200/80 dark:border-border/80 text-slate-900 dark:text-foreground rounded-tl-xs"
+                  ? "max-w-2xl rounded-2xl rounded-tr-xs bg-[#4F46E5] text-white p-4 sm:p-5 shadow-xs"
+                  : "w-full max-w-3xl lg:max-w-4xl rounded-2xl rounded-tl-xs bg-white dark:bg-[#12121A] border border-slate-200/90 dark:border-[#27272A] p-5 sm:p-6 shadow-xs text-slate-900 dark:text-foreground"
               }`}
             >
               {/* Header for Assistant */}
               {!isUser && (
-                <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-border/60">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-xs text-foreground flex items-center gap-1">
+                <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100 dark:border-border/60">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-xs sm:text-[13px] text-foreground flex items-center gap-1.5">
                       {msg.isAgent ? (
                         <>
-                          <Bot className="h-3.5 w-3.5 text-primary" /> Satori Agent
+                          <Bot className="h-4 w-4 text-[#7C3AED] dark:text-violet-400" /> Satori Agent
                         </>
                       ) : (
-                        "Satori AI"
+                        <>
+                          <Sparkles className="h-3.5 w-3.5 text-[#7C3AED] dark:text-violet-400" /> Satori AI
+                        </>
                       )}
                     </span>
                     <Badge
                       variant="outline"
-                      className={`text-[10px] px-1.5 py-0 ${
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded-md ${
                         msg.isAgent
-                          ? "text-primary border-primary/30 bg-primary/10"
-                          : "text-secondary border-secondary/30 bg-secondary/10"
+                          ? "text-[#4F46E5] border-indigo-200/60 dark:border-indigo-900/60 bg-indigo-50/60 dark:bg-indigo-950/40"
+                          : "text-[#7C3AED] border-violet-200/60 dark:border-violet-900/60 bg-violet-50/60 dark:bg-violet-950/40"
                       }`}
                     >
-                      {msg.isAgent ? "agent-loop" : msg.model || "gemini-3.6-flash"}
+                      {msg.isAgent ? "autonomous-agent" : msg.model || "gemini-3.8-flash"}
                     </Badge>
                   </div>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-[11px] text-muted-foreground">
                     {new Date(msg.createdAt).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
@@ -253,20 +197,19 @@ export function MessageThread({
               )}
 
               {/* Message text */}
-              <div
-                className={`leading-relaxed text-[13px] ${
-                  isUser ? "text-primary-foreground" : "text-foreground"
-                }`}
-              >
+              <div className="text-foreground">
                 {isUser ? (
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  <p className="whitespace-pre-wrap text-sm sm:text-[14.5px] leading-relaxed text-white">
+                    {msg.content}
+                  </p>
                 ) : (
-                  <div>
-                    {renderMessageContent(msg.content, msg.citations)}
-                    {isLoading && idx === messages.length - 1 && (
-                      <span className="inline-block w-1.5 h-3.5 ml-1 bg-[#4F46E5] dark:bg-violet-400 animate-pulse align-middle rounded-xs" />
-                    )}
-                  </div>
+                  <MarkdownRenderer
+                    content={msg.content}
+                    citations={msg.citations || []}
+                    activeCitationId={activeCitationId}
+                    onSelectCitation={onSelectCitation}
+                    isStreaming={isLoading && idx === messages.length - 1}
+                  />
                 )}
               </div>
 
@@ -282,12 +225,12 @@ export function MessageThread({
 
               {/* Citations Footer for Assistant Messages */}
               {!isUser && msg.citations && msg.citations.length > 0 && (
-                <div className="mt-3 pt-2.5 border-t border-border/60">
+                <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-border/60">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1 mr-1">
-                      <CheckCircle2 className="h-3 w-3 text-secondary" /> Sources:
+                      <CheckCircle2 className="h-3 w-3 text-[#7C3AED]" /> Sources:
                     </span>
-                    {msg.citations.map((c, idx) => {
+                    {msg.citations.map((c, cIdx) => {
                       const isSelected = c.id === activeCitationId;
                       return (
                         <button
@@ -296,13 +239,13 @@ export function MessageThread({
                           onClick={() => onSelectCitation(c)}
                           className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
                             isSelected
-                              ? "bg-secondary text-secondary-foreground border-secondary font-semibold shadow-2xs"
-                              : "bg-background hover:bg-muted text-foreground border-border"
+                              ? "bg-[#7C3AED] text-white border-[#7C3AED] font-semibold shadow-2xs"
+                              : "bg-slate-50 dark:bg-card hover:bg-slate-100 dark:hover:bg-muted text-foreground border-border"
                           }`}
                         >
-                          <FileText className="h-3 w-3 text-primary opacity-80" />
-                          <span className="font-semibold text-secondary">
-                            [{c.rank || idx + 1}]
+                          <FileText className="h-3 w-3 text-[#4F46E5] opacity-80" />
+                          <span className="font-semibold text-[#7C3AED] dark:text-violet-300">
+                            [{c.rank || cIdx + 1}]
                           </span>
                           <span className="truncate max-w-[120px]">
                             {c.documentName || "Document"}
@@ -315,6 +258,71 @@ export function MessageThread({
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+
+              {/* Utility Action Bar for Assistant Messages */}
+              {!isUser && msg.content && (
+                <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 dark:border-border/50 text-xs text-slate-500 dark:text-muted-foreground mt-2">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(msg.id, msg.content)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-muted text-[11px] font-medium transition-colors cursor-pointer text-slate-600 dark:text-slate-300"
+                      title="Copy response markdown"
+                    >
+                      {copiedId === msg.id ? (
+                        <>
+                          <Check className="h-3 w-3 text-emerald-500" />
+                          <span className="text-emerald-600 dark:text-emerald-400">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3 w-3" />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+
+                    {onRetry && idx === messages.length - 1 && (
+                      <button
+                        type="button"
+                        onClick={onRetry}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-muted text-[11px] font-medium transition-colors cursor-pointer text-slate-600 dark:text-slate-300"
+                        title="Regenerate response"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        <span>Retry</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleFeedback(msg.id, "up")}
+                      className={`p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-muted transition-colors cursor-pointer ${
+                        feedbacks[msg.id] === "up"
+                          ? "text-[#7C3AED] bg-violet-50 dark:bg-violet-950/40"
+                          : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      }`}
+                      title="Helpful response"
+                    >
+                      <ThumbsUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleFeedback(msg.id, "down")}
+                      className={`p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-muted transition-colors cursor-pointer ${
+                        feedbacks[msg.id] === "down"
+                          ? "text-rose-500 bg-rose-50 dark:bg-rose-950/40"
+                          : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      }`}
+                      title="Unhelpful response"
+                    >
+                      <ThumbsDown className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
               )}

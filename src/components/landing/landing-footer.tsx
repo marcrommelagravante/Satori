@@ -32,9 +32,6 @@ export function LandingFooter() {
             <a href="#trust" className="hover:text-[#0F2D4A] dark:hover:text-white transition-colors">
               Security & Trust
             </a>
-            <a href="#architecture" className="hover:text-[#0F2D4A] dark:hover:text-white transition-colors">
-              Architecture
-            </a>
             <Link href="/login" className="hover:text-[#0F2D4A] dark:hover:text-white transition-colors">
               Sign in
             </Link>

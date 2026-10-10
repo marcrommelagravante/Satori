@@ -8,7 +8,6 @@ import { CapabilityBento } from "@/components/landing/capability-bento";
 import { WorkspaceShowcase } from "@/components/landing/workspace-showcase";
 import { UseCases } from "@/components/landing/use-cases";
 import { TrustSection } from "@/components/landing/trust-section";
-import { ArchitectureSection } from "@/components/landing/architecture-section";
 import { FinalCta } from "@/components/landing/final-cta";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import "@/components/landing/landing.css";
@@ -59,12 +58,7 @@ export default async function HomePage() {
           <TrustSection />
         </div>
 
-        {/* 8. Technical architecture & progressive disclosure */}
-        <div className="scroll-reveal">
-          <ArchitectureSection />
-        </div>
-
-        {/* 9. Final CTA */}
+        {/* 8. Final CTA */}
         <div className="scroll-reveal">
           <FinalCta user={user} />
         </div>
